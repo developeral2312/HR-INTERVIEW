@@ -1,0 +1,44 @@
+# Web Framework
+fastapi
+uvicorn
+
+# Database
+sqlalchemy
+alembic
+psycopg2-binary
+pymysql
+
+# Authentication
+python-jose
+passlib
+python-multipart
+bcrypt
+
+# API Client
+httpx
+PyPDF2
+groq
+# AI/ML - Updated for compatibility
+openai
+langchain
+langchain-openai
+pydantic
+tiktoken
+
+# File Processing
+python-docx
+pypdf
+docx2txt
+pdfminer.six
+
+# Utilities
+python-dotenv
+email-validator
+jinja2
+pandas
+numpy
+tqdm
+
+# Testing
+pytest
+pytest-asyncio
