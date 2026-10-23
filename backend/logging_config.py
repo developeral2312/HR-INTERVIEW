@@ -1,6 +1,6 @@
 """
 Centralized Logging Configuration for AI Recruiter
-Provides consistent logging across all modules with proper formatting
+Provides consistent logging across all modules with proper formatting.
 """
 
 import logging

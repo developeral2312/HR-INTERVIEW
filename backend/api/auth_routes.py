@@ -1,6 +1,6 @@
 """
 Firebase Authentication API Routes
-
+#
 Purpose: Handle Firebase authentication and sync with MongoDB
 Endpoints:
 - POST /api/auth/register - Register new user with role selection

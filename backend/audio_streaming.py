@@ -7,7 +7,7 @@ Features:
 1. Receive audio chunks from Meet Bot
 2. Send to STT for transcription
 3. Return transcribed text in real-time
-4. Handle multiple concurrent interviews
+4. Handle multiple concurrent interviews.
 """
 
 import asyncio

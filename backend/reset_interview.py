@@ -1,6 +1,6 @@
 """
 Reset Interview Script
-Resets an interview to fresh state so it can be tested again
+Resets an interview to fresh state so it can be tested again.
 """
 import requests
 import sys

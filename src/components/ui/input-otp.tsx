@@ -18,6 +18,8 @@ const InputOTP = React.forwardRef<
     {...props}
   />
 ))
+
+
 InputOTP.displayName = "InputOTP"
 
 const InputOTPGroup = React.forwardRef<

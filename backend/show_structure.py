@@ -1,7 +1,7 @@
 """
 Project Structure Documentation
 
-Shows the complete folder structure and organization.
+Shows the complete folder structure and organization
 """
 
 def display_project_structure():

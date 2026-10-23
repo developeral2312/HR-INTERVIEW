@@ -1,6 +1,6 @@
 """
 Audio Transcription LangGraph Agent
-Handles real-time audio transcription using Groq Whisper API
+Handles real-time audio transcriptions using Groq Whisper API
 """
 
 import json

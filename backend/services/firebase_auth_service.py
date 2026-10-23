@@ -6,7 +6,7 @@ Features:
 - Sync Firebase users to MongoDB
 - Role-based access (HR and Employee)
 - Unified authentication flow
-- Automatic Firebase Auth cleanup when deleting MongoDB users
+- Automatic Firebase Auth cleanup when deleting MongoDB users.
 """
 
 import logging
@@ -47,6 +47,25 @@ class FirebaseAuthService:
     def __init__(self):
         self.user_repo = UserRepository()
     
+    def register_user(
+        self,
+        firebase_uid: str,
+        email: str,
+        full_name: str,
+        role: str,
+        company: Optional[str] = None,
+        phone: Optional[str] = None
+    ) -> Optional[Dict]:
+        """Alias for register_user_with_role"""
+        return self.register_user_with_role(
+            firebase_uid=firebase_uid,
+            email=email,
+            full_name=full_name,
+            role=role,
+            company=company,
+            phone=phone
+        )
+
     def register_user_with_role(
         self,
         firebase_uid: str,
@@ -71,10 +90,17 @@ class FirebaseAuthService:
             User document if successful
         """
         try:
-            # Validate role
-            if role not in [UserRole.HR, UserRole.EMPLOYEE]:
+            # Validate and normalize role
+            role_normalized = (role or 'employee').strip().lower()
+            if role_normalized in ['candidate', 'applicant']:
+                role_normalized = UserRole.EMPLOYEE
+            elif role_normalized in ['recruiter', 'admin']:
+                role_normalized = UserRole.HR
+                
+            if role_normalized not in [UserRole.HR, UserRole.EMPLOYEE]:
                 logger.error(f"Invalid role: {role}. Must be 'hr' or 'employee'")
                 return None
+            role = role_normalized
             
             # Check if user already exists
             existing_user = self.user_repo.get_user_by_firebase_uid(firebase_uid)

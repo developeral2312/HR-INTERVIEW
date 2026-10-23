@@ -2,7 +2,6 @@
  * Authentication Service
  * 
  * Integrates Firebase authentication with MongoDB backend
- * Handles user registration, login, and role management
  */
 
 import { FASTAPI_ENDPOINTS } from '../config/api';
@@ -77,7 +76,7 @@ export const registerUser = async (
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.error || 'Registration failed');
+      throw new Error(data.error || data.detail || 'Registration failed');
     }
 
     return data;

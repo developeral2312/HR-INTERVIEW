@@ -14,6 +14,8 @@ const SkillGapAnalysis: React.FC<SkillGapAnalysisProps> = ({ resumeFile, resumeT
   const [error, setError] = useState<string | null>(null);
   const [skillGap, setSkillGap] = useState<any>(null);
 
+
+  
   const handleAnalyze = async () => {
     if (!resumeText) {
       setError('Please upload a resume first');

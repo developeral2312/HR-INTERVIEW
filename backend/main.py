@@ -1,7 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect, Header
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect, Header, Request, Response
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict, Any
 import uvicorn
@@ -26,7 +25,7 @@ from langgraph_integration import get_langgraph_service, initialize_langgraph_se
 # Dashboard Service
 from dashboard_service import get_dashboard_service
 
-# MongoDB Client - Centralized database connection
+## MongoDB Client - Centralized database connection
 from db.mongo_client import get_mongo_client, get_db, get_collection
 from db.models import Collections
 
@@ -222,6 +221,16 @@ def extract_text_from_pdf(file: UploadFile) -> str:
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
+                # Also extract any hyperlink annotations (e.g. mailto: links)
+                try:
+                    if "/Annots" in page:
+                        for annot in page["/Annots"]:
+                            obj = annot.get_object()
+                            if "/A" in obj and "/URI" in obj["/A"]:
+                                uri = obj["/A"]["/URI"]
+                                text += f"\n{uri}\n"
+                except Exception:
+                    pass
             if text.strip():
                 return text.strip()
         except Exception as pdf_err:
@@ -236,20 +245,92 @@ def extract_text_from_pdf(file: UploadFile) -> str:
         return ""
 
 def extract_entities_from_text(text: str) -> tuple:
-    """Extract candidate emails and names from resume text"""
+    """Smart extraction of candidate emails and names from resume text"""
+    emails = []
+    names = []
     try:
-        emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
-        names = re.findall(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', text)
+        # Strategy 1: Fast linear space-tolerant regex for emails (handles 'name @gmail.com' without backtracking)
+        raw_matches = re.findall(r'[a-zA-Z0-9._%+-]+\s*@\s*[a-zA-Z0-9.-]+\s*\.\s*[a-zA-Z]{2,}', text)
+        for m in raw_matches:
+            cleaned = re.sub(r'\s+', '', m)
+            if '@' in cleaned and '.' in cleaned.split('@')[-1]:
+                domain_part = cleaned.split('@')[-1]
+                if len(domain_part.split('.')[-1]) >= 2:
+                    emails.append(cleaned)
+
+        # Strategy 2: Check for mailto: links
+        mailto_matches = re.findall(r'mailto:\s*([^\s?">]+)', text, re.IGNORECASE)
+        for m in mailto_matches:
+            cleaned = re.sub(r'\s+', '', m)
+            if '@' in cleaned and '.' in cleaned:
+                emails.append(cleaned)
+
+        # Deduplicate emails while preserving order
+        seen_emails = set()
+        dedup_emails = []
+        for e in emails:
+            e_lower = e.lower()
+            if e_lower not in seen_emails:
+                seen_emails.add(e_lower)
+                dedup_emails.append(e)
+        emails = dedup_emails
+
+        # Extract names: check first few lines
+        first_lines = [l.strip() for l in text.split('\n') if l.strip()][:5]
+        for line in first_lines:
+            # Clean common noise like "(Noida)", "(Pursuing)", phone numbers, pipes
+            cleaned_line = re.sub(r'\(.*?\)', '', line)
+            cleaned_line = re.sub(r'[\|\+0-9].*', '', cleaned_line).strip()
+            found = re.findall(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', cleaned_line)
+            if found:
+                names = found
+                break
+
         if not names:
-            lines = [l.strip() for l in text.split('\n') if l.strip()][:5]
-            for line in lines:
-                found = re.findall(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', line)
-                if found:
-                    names = found
-                    break
+            found = re.findall(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', text)
+            if found:
+                names = found[:3]
+
+        # Strategy 3: AI / LLM fallback if email is STILL not found
+        if not emails and text.strip():
+            try:
+                groq_key = os.getenv('API_KEY_ANALYSIS') or os.getenv('GROQ_API_KEY')
+                if groq_key:
+                    groq_client = Groq(api_key=groq_key)
+                    prompt = f"""Extract the candidate's email address and full name from this resume excerpt.
+If not present, return null for email.
+
+Resume excerpt:
+{text[:1200]}
+
+Respond ONLY in valid JSON:
+{{"name": "Candidate Full Name", "email": "candidate@example.com"}}"""
+                    res = groq_client.chat.completions.create(
+                        model="qwen/qwen3.8-27b",
+                        messages=[
+                            {"role": "system", "content": "You are a recruitment data extractor. Output ONLY valid JSON."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.0,
+                        max_tokens=100
+                    )
+                    content = res.choices[0].message.content.strip()
+                    if "```" in content:
+                        content = re.sub(r'```(?:json)?', '', content).strip('` \n')
+                    data = json.loads(content)
+                    llm_email = data.get("email")
+                    llm_name = data.get("name")
+                    if llm_email and "@" in llm_email and llm_email.lower() != "null":
+                        emails = [llm_email.strip()]
+                    if llm_name and not names and llm_name.lower() != "null":
+                        names = [llm_name.strip()]
+            except Exception as llm_err:
+                logger.warning(f"LLM entity extraction fallback error: {llm_err}")
+
         return emails, names
-    except Exception:
-        return [], []
+    except Exception as e:
+        logger.error(f"Error in extract_entities_from_text: {e}")
+        return emails, names
 
 def analyze_resume_text(text: str, requirements: str) -> dict:
     """Analyze resume text against job requirements with bias reduction."""
@@ -447,6 +528,315 @@ async def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# RESUME ANALYZER ACTION ENDPOINTS
+# ============================================================================
+
+class SendEmailsPayload(BaseModel):
+    action: Optional[str] = "accept"
+    message: Optional[str] = ""
+    selected_emails: Optional[List[str]] = []
+    rejected_emails: Optional[List[str]] = []
+    subject: Optional[str] = "Application Status Update"
+
+@app.post("/api/generate-message")
+async def generate_message_endpoint(
+    request: Request,
+    action: Optional[str] = Form(None),
+    job_description: Optional[str] = Form(None),
+    candidates: Optional[str] = Form(None)
+):
+    """Generate professional acceptance or rejection message using AI"""
+    try:
+        # Check if payload was sent as JSON instead of Form
+        if not action:
+            try:
+                json_body = await request.json()
+                action = json_body.get("action")
+                job_description = json_body.get("job_description")
+                cand_val = json_body.get("candidates")
+                if isinstance(cand_val, list):
+                    candidates = json.dumps(cand_val)
+                elif isinstance(cand_val, str):
+                    candidates = cand_val
+            except Exception:
+                pass
+
+        action = action or "accept"
+        job_description = job_description or "Open Position"
+
+        cand_list_str = ""
+        if candidates:
+            try:
+                parsed_candidates = json.loads(candidates)
+                if isinstance(parsed_candidates, list):
+                    cand_list_str = "\n".join([
+                        f"- {c.get('name', 'Candidate')} (Email: {c.get('email', '')}, Match: {c.get('similarity', 0)}%)"
+                        for c in parsed_candidates if isinstance(c, dict)
+                    ])
+            except Exception:
+                pass
+
+        if action == "accept":
+            prompt = f"""Generate a professional acceptance email for the following candidate(s):
+Job Description: {job_description}
+
+Selected Candidates:
+{cand_list_str if cand_list_str else 'Selected Candidate'}
+
+Generate a professional acceptance email that:
+1. Congratulates the candidate warmly on being shortlisted
+2. Mentions appreciation of their qualifications and profile alignment
+3. Outlines upcoming next steps for the interview process
+4. Maintains a welcoming, professional, and courteous tone
+
+Email:"""
+        else:
+            prompt = f"""Generate a professional and courteous rejection email:
+Job Description: {job_description}
+
+Generate a professional rejection email that:
+1. Thanks the candidate for their time and interest in applying
+2. Respectfully informs them that other candidates were selected at this stage
+3. Encourages future applications
+4. Maintains a polite, constructive, and professional tone
+
+Email:"""
+
+        generated_message = ""
+        try:
+            groq_key = os.getenv('API_KEY_ANALYSIS') or os.getenv('GROQ_API_KEY')
+            groq_client = Groq(api_key=groq_key)
+            response = groq_client.chat.completions.create(
+                model="qwen/qwen3.8-27b",
+                messages=[
+                    {"role": "system", "content": "You are a professional HR assistant and talent acquisition specialist. Generate clear, polished, and ready-to-send recruitment emails."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=600
+            )
+            generated_message = response.choices[0].message.content.strip()
+        except Exception as groq_err:
+            logger.warning(f"Groq generation fallback in /api/generate-message: {groq_err}")
+            if action == 'accept':
+                generated_message = f"""Dear Candidate,
+
+We are pleased to inform you that your application for {job_description[:50] if job_description else 'the position'} has been shortlisted! Your qualifications and experience closely align with our requirements.
+
+Next Steps:
+1. Please confirm your availability for an interview discussion.
+2. Review the role specifications and prepare any questions you may have for our team.
+3. We will contact you shortly with the schedule and meeting details.
+
+Best regards,
+Talent Acquisition Team"""
+            else:
+                generated_message = f"""Dear Candidate,
+
+Thank you for your interest and for taking the time to apply for {job_description[:50] if job_description else 'the position'}.
+
+After careful review of all submissions, we have decided to move forward with other candidates whose profiles more closely meet our specific requirements for this role.
+
+We truly appreciate your interest in our company and encourage you to apply for future openings that match your skills.
+
+Best regards,
+Talent Acquisition Team"""
+
+        return {
+            "success": True,
+            "generated_message": generated_message
+        }
+    except Exception as e:
+        logger.error(f"Error in /api/generate-message: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/send-emails")
+async def send_emails_endpoint(payload: SendEmailsPayload):
+    """Send acceptance or rejection emails to selected/rejected candidates via SMTP"""
+    try:
+        action = payload.action or "accept"
+        message = payload.message or ""
+        subject = payload.subject or ("Congratulations - Your Application Has Been Selected" if action == "accept" else "Application Status Update - Thank You for Your Interest")
+        
+        target_emails = payload.selected_emails if action == "accept" else payload.rejected_emails
+        if not target_emails:
+            target_emails = payload.selected_emails or payload.rejected_emails or []
+
+        if not target_emails:
+            return {"success": False, "error": "No recipient emails provided", "results": []}
+
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        smtp_username = os.getenv('SMTP_USERNAME')
+        smtp_password = os.getenv('SMTP_PASSWORD')
+        sender_email = os.getenv('SENDER_EMAIL', smtp_username)
+
+        results = []
+        for email in target_emails:
+            if not email or '@' not in email:
+                results.append({"email": email, "success": False, "message": "Invalid email address"})
+                continue
+            try:
+                import smtplib
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+
+                msg = MIMEMultipart('alternative')
+                msg['From'] = f"AI Recruiter <{sender_email}>"
+                msg['To'] = email
+                msg['Subject'] = subject
+                msg.attach(MIMEText(message, 'plain', 'utf-8'))
+
+                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                    server.starttls()
+                    if smtp_username and smtp_password:
+                        server.login(smtp_username, smtp_password)
+                    server.send_message(msg)
+
+                results.append({"email": email, "success": True, "message": "Email sent successfully"})
+
+                try:
+                    from repositories.email_repository import EmailRepository
+                    EmailRepository().log_email(
+                        recipient_email=email,
+                        recipient_name="Candidate",
+                        subject=subject,
+                        body=message,
+                        email_type="selection" if action == "accept" else "rejection",
+                        status="sent"
+                    )
+                except Exception as log_err:
+                    logger.warning(f"Failed to log email in Mongo: {log_err}")
+
+            except Exception as mail_err:
+                logger.error(f"Failed sending email to {email}: {mail_err}")
+                results.append({"email": email, "success": False, "message": str(mail_err)})
+
+        any_success = any(r.get("success") for r in results)
+        return {
+            "success": any_success or len(results) == 0,
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Error in /api/send-emails: {str(e)}")
+        return {"success": False, "error": str(e), "results": []}
+
+@app.post("/api/send-acceptance")
+async def send_acceptance_endpoint(request: Request):
+    """Log HR candidate acceptance records in MongoDB"""
+    try:
+        data = await request.json()
+        hr_id = data.get('hr_id', '')
+        hr_name = data.get('hr_name', 'HR')
+        hr_email = data.get('hr_email', '')
+        candidates = data.get('candidates', [])
+        job_description = data.get('job_description', '')
+        batch_id = data.get('batch_id')
+        selection_method = data.get('selection_method', 'manual')
+
+        results = []
+        try:
+            from db.mongo_client import get_collection
+            from db.models import Collections
+            selected_col = get_collection(Collections.SELECTED_CANDIDATES)
+
+            for c in candidates:
+                cand_name = c.get('candidate_name', 'Unknown')
+                cand_email = c.get('candidate_email', '')
+                doc = {
+                    "candidate_name": cand_name,
+                    "candidate_email": cand_email,
+                    "match_score": c.get('match_score', 0),
+                    "ats_score": c.get('ats_score', 0),
+                    "matching_skills": c.get('matching_skills', []),
+                    "missing_skills": c.get('missing_skills', []),
+                    "strengths": c.get('strengths', []),
+                    "improvement_areas": c.get('improvement_areas', []),
+                    "hr_id": hr_id,
+                    "hr_name": hr_name,
+                    "hr_email": hr_email,
+                    "job_description": job_description,
+                    "batch_id": batch_id,
+                    "selection_method": selection_method,
+                    "created_at": datetime.datetime.utcnow()
+                }
+                res = selected_col.insert_one(doc)
+                results.append({
+                    "candidate": cand_name,
+                    "email": cand_email,
+                    "selected_id": str(res.inserted_id),
+                    "email_status": "logged"
+                })
+        except Exception as db_err:
+            logger.warning(f"Error saving to selected_candidates collection: {db_err}")
+            for c in candidates:
+                results.append({
+                    "candidate": c.get('candidate_name', 'Unknown'),
+                    "email": c.get('candidate_email', ''),
+                    "selected_id": None,
+                    "email_status": "logged"
+                })
+
+        return {
+            "success": True,
+            "summary": "Candidate selections logged successfully.",
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Error in /api/send-acceptance: {str(e)}")
+        return {"success": False, "error": str(e), "results": []}
+
+@app.post("/api/process-action")
+async def process_action_endpoint(
+    request: Request,
+    action: Optional[str] = Form(None),
+    custom_message: Optional[str] = Form(None)
+):
+    """Process selection/rejection action acknowledgement"""
+    try:
+        form_data = await request.form()
+        action_val = action or form_data.get("action") or "accept"
+        msg_val = custom_message or form_data.get("custom_message") or ""
+        selected_resumes = form_data.getlist("selected_resume")
+
+        return {
+            "success": True,
+            "msg": f"Action '{action_val}' processed successfully for {len(selected_resumes)} candidate(s).\n{msg_val}"
+        }
+    except Exception as e:
+        logger.error(f"Error in /api/process-action: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/download-csv")
+async def download_csv_endpoint():
+    """Download ranked candidates CSV"""
+    try:
+        csv_content = "Rank,Name,Email,Similarity\n"
+        try:
+            from db.mongo_client import get_collection
+            from db.models import Collections
+            col = get_collection(Collections.ANALYSIS_RESULTS)
+            recent = list(col.find().sort("created_at", -1).limit(20))
+            if recent:
+                for idx, r in enumerate(recent, start=1):
+                    name = r.get("candidate_name") or "Candidate"
+                    email = r.get("candidate_email") or ""
+                    score = r.get("match_score", 0)
+                    csv_content += f'{idx},"{name}","{email}",{score}%\n'
+        except Exception:
+            pass
+
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=ranked_resumes.csv"}
+        )
+    except Exception as e:
+        logger.error(f"Error in download_csv: {str(e)}")
+        return Response(content="Rank,Name,Email,Similarity\n", media_type="text/csv")
 
 
 # ============================================================================
@@ -2423,6 +2813,7 @@ class InterviewScheduleRequest(BaseModel):
     interview_type: str = "ai_assisted"  # ai_assisted, human, hybrid
     auto_start_bot: bool = True  # Enable automatic bot joining when candidate clicks
     send_email: bool = True  # If False, skips sending email to candidate and HR (for internal pre-screening)
+    custom_meet_link: Optional[str] = None  # Optional recruiter Google Meet link (e.g. from meet.google.com/new)
 
 
 @app.post("/api/interviews/schedule")
@@ -2506,7 +2897,8 @@ async def schedule_interview(request: InterviewScheduleRequest):
             duration_minutes=request.duration_minutes,
             interview_type=request.interview_type,
             auto_start_bot=request.auto_start_bot,
-            send_email=request.send_email
+            send_email=request.send_email,
+            custom_meet_link=request.custom_meet_link
         )
         
         logger.info(f"✅ Workflow completed: {'SUCCESS' if result['success'] else 'FAILED'}")
@@ -7569,7 +7961,8 @@ async def register_user(request: RegisterRequest):
     from services.firebase_auth_service import FirebaseAuthService
     auth_service = FirebaseAuthService()
     try:
-        user = auth_service.register_user(
+        register_fn = getattr(auth_service, 'register_user_with_role', None) or getattr(auth_service, 'register_user')
+        user = register_fn(
             firebase_uid=request.firebase_uid,
             email=request.email,
             full_name=request.full_name,
@@ -7578,7 +7971,7 @@ async def register_user(request: RegisterRequest):
             phone=request.phone
         )
         if not user:
-            raise HTTPException(status_code=400, detail="Registration failed")
+            raise HTTPException(status_code=400, detail="Registration failed. Please check your role and credentials.")
         if "_id" in user:
             user["_id"] = str(user["_id"])
         if "created_at" in user and hasattr(user["created_at"], "isoformat"):
@@ -7588,6 +7981,8 @@ async def register_user(request: RegisterRequest):
         if "last_login" in user and hasattr(user["last_login"], "isoformat"):
             user["last_login"] = user["last_login"].isoformat()
         return {"success": True, "user": user, "message": "Registration successful"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

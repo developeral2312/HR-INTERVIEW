@@ -1,6 +1,6 @@
 """
 TTS Repository
-Manages TTS audio storage, retrieval, and voice profiles
+Manages TTS audio storage, retrieval, and voice profiles.
 """
 
 import logging

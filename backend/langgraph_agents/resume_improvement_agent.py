@@ -24,7 +24,7 @@ This agent provides intelligent resume improvement suggestions using:
                 continue
             except Exception as e:
                 logger.warning(f"⚠️ Error generating suggestion for {gap.get('area')}: {str(e)}")
-                continuee → identify gaps → generate suggestions
+                continuee → identify gaps → generate suggestions,
 """
 
 from typing import TypedDict, List, Dict, Any

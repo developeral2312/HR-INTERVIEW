@@ -1,6 +1,6 @@
 """
 Session Isolation & Memory Sandboxing
-Prevents data overlap between parallel sessions
+Prevents data overlap between parallel sessions.
 """
 
 import logging

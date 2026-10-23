@@ -5,7 +5,7 @@ Features:
 - Log all sent emails
 - Track email delivery status
 - Email history
-- Email templates
+- Email templates.
 """
 
 import logging

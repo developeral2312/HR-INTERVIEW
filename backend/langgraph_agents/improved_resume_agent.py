@@ -4,7 +4,7 @@ Improved Resume Generation Agent with LangGraph + MCP Integration
 This agent generates an improved version of a resume using:
 - LangGraph workflow for structured generation
 - MCP (Model Context Protocol) for efficient context management
-- Multi-step process: extract → enhance → format → validate
+- Multi-step process: extract → enhance → format → validates
 """
 
 from typing import TypedDict, List, Dict, Any

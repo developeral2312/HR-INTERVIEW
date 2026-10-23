@@ -11,7 +11,7 @@ Features:
 - Audio quality management and buffering
 
 Author: AI Recruiter Team
-Created: February 2026
+Created: February 2026.
 """
 
 import asyncio

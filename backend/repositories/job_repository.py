@@ -5,7 +5,7 @@ Features:
 - Create and manage job postings
 - Job search and filtering
 - Job requirements tracking
-- Job statistics
+- Job statistics.
 """
 
 import logging

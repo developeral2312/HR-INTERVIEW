@@ -5,7 +5,7 @@ Features:
 - Create Q&A sessions
 - Track questions and answers
 - Conversation history
-- Performance tracking
+- Performance tracking.
 """
 
 import logging

@@ -12,7 +12,7 @@ How it works:
 2. Remove redundant information
 3. Compress verbose sections
 4. Prioritize important context
-5. Estimate token usage before calling LLM
+5. Estimate token usage before calling LLM.
 """
 
 import logging

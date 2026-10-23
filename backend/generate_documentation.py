@@ -2,7 +2,7 @@
 Feature Documentation Generator
 
 This script generates comprehensive documentation about all features
-and their MongoDB integration.
+and their MongoDB integration..
 """
 
 import sys

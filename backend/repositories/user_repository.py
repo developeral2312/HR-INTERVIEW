@@ -5,7 +5,7 @@ Features:
 - User registration and authentication
 - Password hashing with bcrypt
 - User profile management
-- User search and retrieval
+- User search and retrieval.
 """
 
 import logging

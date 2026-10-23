@@ -2,7 +2,7 @@
 HR Batch Management Models
 
 New collections for HR-specific candidate and interview batch management
-"""
+"""#
 
 from datetime import datetime
 from typing import Dict, List, Any, Optional

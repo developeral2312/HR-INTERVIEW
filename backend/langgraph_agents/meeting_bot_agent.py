@@ -2,7 +2,7 @@
 Meeting Bot LangGraph Agent
 Auto-joins Zoom/Google Meet meetings
 Manages bot lifecycle and meeting interactions
-Coordinates with STT and TTS agents
+Coordinates with STT and TTS agents.
 """
 
 import json
@@ -268,7 +268,6 @@ class MeetingBotAgent:
             state['errors'] = []
             state['retry_count'] = 0
             
-            # Set feature flags
             if state.get('auto_transcribe') is None:
                 state['auto_transcribe'] = True
             if state.get('auto_tts') is None:
@@ -368,7 +367,6 @@ class MeetingBotAgent:
             logger.info("📝 Note: Browser automation requires Selenium/Playwright integration")
             
             return state
-            
         except Exception as e:
             logger.error(f"❌ Error preparing browser: {str(e)}", exc_info=True)
             state['errors'].append({
@@ -408,11 +406,7 @@ class MeetingBotAgent:
             logger.info(f"✅ Bot joined meeting")
             logger.info(f"   Join time: {state['join_time']}")
             
-            # In production, implement actual browser automation:
-            # from selenium import webdriver
-            # driver = webdriver.Chrome()
-            # driver.get(meeting_link)
-            # # Click join button based on platform selectors
+
             
             return state
             
@@ -430,9 +424,7 @@ class MeetingBotAgent:
             if state.get('retry_count', 0) < 3:
                 state['retry_count'] += 1
                 logger.info(f"🔄 Retrying join... (attempt {state['retry_count']}/3)")
-            
             return state
-    
     def setup_audio(self, state: MeetingBotState) -> MeetingBotState:
         """Setup audio devices (microphone and speakers)"""
         logger.info("🎤 Setting up audio devices")
@@ -573,13 +565,11 @@ class MeetingBotAgent:
                 "questions_asked": state.get('questions_asked', 0),
                 "answers_received": state.get('answers_received', 0),
                 
-                # Status
                 "processing_status": state.get('processing_status'),
                 "success": state.get('success', False),
                 "errors": state.get('errors', []),
                 "has_errors": len(state.get('errors', [])) > 0,
                 
-                # Timestamps
                 "created_at": datetime.fromisoformat(state.get('created_at', datetime.utcnow().isoformat())),
                 "started_at": datetime.fromisoformat(state.get('started_at', datetime.utcnow().isoformat())),
                 "completed_at": datetime.utcnow(),

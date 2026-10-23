@@ -5,14 +5,14 @@ Purpose: Intelligent caching for LLM responses to improve speed and reduce costs
 Why we need this:
 - Avoid redundant LLM calls for similar queries
 - Dramatically speed up response times (cache hit = instant response)
-- Reduce API costs (cached responses = free)
+- Reduce API costs (cached responses = free.)
 - Implement semantic similarity matching (not just exact matches)
 
 How it works:
 1. Hash queries and store responses
 2. Use embeddings for semantic similarity
 3. Return cached response if query is similar enough
-4. Set TTL (time-to-live) for cache expiration
+4. Set TTL (time-to-live) for cache expiration.
 """
 
 import logging

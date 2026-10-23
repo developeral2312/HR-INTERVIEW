@@ -1,7 +1,7 @@
 """
 Post-Interview Analytics Agent
 Generates comprehensive analysis using LangGraph workflow
-Analyzes transcripts and calculates metrics
+Analyzes transcripts and calculates metric
 """
 
 import json

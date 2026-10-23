@@ -2,7 +2,7 @@
 
 > **Stack:** Python 3.11 · FastAPI · React/TypeScript · LangGraph · Groq · Deepgram · MongoDB · Redis · Playwright
 
----
+---//
 
 ## What is this project?
 

@@ -5,7 +5,7 @@ Features:
 - Resume upload and storage
 - Resume text extraction
 - Resume search and filtering
-- Resume metadata management
+- Resume metadata management.
 """
 
 import logging

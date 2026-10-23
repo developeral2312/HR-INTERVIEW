@@ -11,6 +11,7 @@ const Spinner = ({ className, size = 'md', ...props }: SpinnerProps) => {
     lg: 'h-8 w-8',
   };
 
+  
   return (
     <div
       className={cn(

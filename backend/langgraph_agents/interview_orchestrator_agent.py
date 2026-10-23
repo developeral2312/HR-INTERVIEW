@@ -6,7 +6,7 @@ This agent orchestrates the entire interview process:
 2. Ask questions using TTS (Text-to-Speech)
 3. Listen to answers using STT (Speech-to-Text)
 4. Analyze answers using LLM
-5. Ask follow-up questions
+5. Ask follow-up questions.
 6. Maintain interview flow and context
 
 Uses LangGraph for workflow management and MCP for optimization.
@@ -170,7 +170,7 @@ class InterviewOrchestratorAgent:
             result = self.question_generator.generate_questions(
                 resume_path=state['resume_path'],
                 job_title=state['job_title'],
-                num_questions=5  # Generate 5 questions
+                num_questions=5 
             )
             
             if result.get('success'):

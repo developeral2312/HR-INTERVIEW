@@ -6,7 +6,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 // FastAPI backend (port 8001) - Advanced AI features
 export const FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_BASE_URL || 'http://localhost:8001';
 
-// Flask API endpoints (existing features)
+// Flask API endpoints (existing
 export const API_ENDPOINTS = {
   analyze: `${API_BASE_URL}/api/analyze`,
   qa: `${API_BASE_URL}/api/qa`,
@@ -113,4 +113,4 @@ export const FASTAPI_ENDPOINTS = {
 
   // WebSocket
   audioWs: (interviewId: string) => `${FASTAPI_BASE_URL.replace('http', 'ws')}/ws/audio/${interviewId}`,
-};
+};

@@ -1,5 +1,5 @@
 """
-🔐 FIREBASE AUTHENTICATION INTEGRATION
+🔐 FIREBASE AUTHENTICATION INTEGRATION,
 
 This document explains how Firebase authentication is integrated with MongoDB.
 

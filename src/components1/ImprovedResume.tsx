@@ -16,6 +16,9 @@ interface ImprovedResumeProps {
   resumeFile: File | null;
 }
 
+
+
+
 const ROLE_REQUIREMENTS = {
   "AI/ML Engineer": [
     "Machine Learning",

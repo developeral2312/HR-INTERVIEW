@@ -7,7 +7,6 @@ import { GlobalWorkerOptions } from 'pdfjs-dist/build/pdf';
 // npm i pdfjs-dist
 // or
 // yarn add pdfjs-dist
-// @ts-ignore - importing worker asset URL for Vite bundler
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 GlobalWorkerOptions.workerSrc = workerSrc as unknown as string;

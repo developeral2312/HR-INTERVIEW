@@ -5,6 +5,9 @@ import { FASTAPI_ENDPOINTS } from '@/config/api';
 import { Activity, Server, Users, Clock, Zap, RefreshCw, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+
+
+
 interface SystemMetrics {
   uptime_seconds?: number;
   active_sessions?: number;

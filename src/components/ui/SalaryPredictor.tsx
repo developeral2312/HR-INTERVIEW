@@ -20,6 +20,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RotateCw } from 'lucide-react';
 
+
+
+
 // Register ChartJS components
 ChartJS.register(
   CategoryScale,

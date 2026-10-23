@@ -5,7 +5,7 @@ Features:
 - Track candidate selection/rejection
 - Candidate status management
 - Candidate history
-- Decision tracking
+- Decision tracking.
 """
 
 import logging

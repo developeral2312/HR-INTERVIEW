@@ -1,7 +1,7 @@
 """
 Q&A Service - Q&A session business logic
 
-Placeholder for future Q&A-related business logic
+Placeholder for future Q&A-related business logic.
 """
 
 from repositories.qa_repository import QARepository

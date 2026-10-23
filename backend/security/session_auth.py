@@ -1,6 +1,6 @@
 """
 Session Authentication & Security
-JWT-based session tokens with per-session isolation
+JWT-based session tokens with per-session isolation.
 """
 
 import jwt

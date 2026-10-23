@@ -6,13 +6,16 @@ if (!groqApiKey) {
   console.error('VITE_GROQ_API_KEY is not defined. Please check your .env file.');
 }
 
+
+
+
 console.log('Initializing Groq client with API key: Present');
 const groq = new Groq({
   apiKey: groqApiKey,
   dangerouslyAllowBrowser: true
 });
 
-// Define available features and their variations
+// Define  features and their variations
 const FEATURES = {
   'resume_analysis': {
     name: 'Resume Analysis',
@@ -60,17 +63,19 @@ export const detectIntent = async (input: string, isHR: boolean = false): Promis
   // Convert input to lowercase for case-insensitive matching
   const lowerInput = input.toLowerCase();
   
-  // Special handling for salary-related queries in HR chatbot
-  if (isHR && (
+  // Handling for salary-related queries in both HR and candidate chatbots
+  if (
     lowerInput.includes('salary') || 
     lowerInput.includes('pay') || 
     lowerInput.includes('compensation') || 
     lowerInput.includes('earn') || 
     lowerInput.includes('income')
-  )) {
+  ) {
     return {
-      intent: null,
-      response: "I'm sorry, but salary prediction is not available in the HR section. Please visit the Employee section for this functionality."
+      intent: 'salary_prediction',
+      response: isHR
+        ? "Opening Salary Predictor & Benchmark tool. You can estimate candidate market compensation using our trained XGBoost ML model."
+        : "I can help you predict expected salary based on your experience, education, job level, and industry. Please fill in the details."
     };
   }
 

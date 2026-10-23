@@ -11,7 +11,7 @@ Architecture:
 - Uses Google Calendar API v3
 - OAuth 2.0 with refresh tokens
 - Automatic token refresh when expired
-- Error responses always return 200 status with error details
+- Error responses always return 200 status with error details.
 """
 
 import logging
@@ -100,29 +100,24 @@ class GoogleCalendarService:
                     self.token_path, SCOPES
                 )
             
-            # Refresh or request new token
+            # Refresh or validate token non-interactively (never block server with run_local_server)
             if not self.credentials or not self.credentials.valid:
                 if self.credentials and self.credentials.expired and self.credentials.refresh_token:
                     logger.info("🔄 Refreshing expired token...")
-                    self.credentials.refresh(Request())
-                    logger.info("✅ Token refreshed successfully")
-                else:
-                    if not os.path.exists(self.credentials_path):
-                        error_msg = f"Google credentials file not found: {self.credentials_path}"
-                        logger.error(f"❌ {error_msg}")
+                    try:
+                        self.credentials.refresh(Request())
+                        logger.info("✅ Token refreshed successfully")
+                        with open(self.token_path, 'w') as token_file:
+                            token_file.write(self.credentials.to_json())
+                        logger.info(f"💾 Token saved to {self.token_path}")
+                    except Exception as refresh_err:
+                        error_msg = f"Token refresh failed: {str(refresh_err)}"
+                        logger.warning(f"⚠️ {error_msg}")
                         return False, error_msg
-                    
-                    logger.info("🆕 Requesting new token (first time setup)...")
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        self.credentials_path, SCOPES
-                    )
-                    self.credentials = flow.run_local_server(port=0)
-                    logger.info("✅ New token obtained")
-                
-                # Save token for future use
-                with open(self.token_path, 'w') as token_file:
-                    token_file.write(self.credentials.to_json())
-                logger.info(f"💾 Token saved to {self.token_path}")
+                else:
+                    error_msg = "Google token missing or invalid. Non-interactive server mode: skipping run_local_server."
+                    logger.warning(f"⚠️ {error_msg}")
+                    return False, error_msg
             
             # Build calendar service
             self.service = build('calendar', 'v3', credentials=self.credentials)

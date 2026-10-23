@@ -13,7 +13,7 @@ Features:
 - Session validation and refresh
 
 Author: AI Recruiter Team
-Created: February 2026
+Created: February 2026.
 """
 
 import asyncio

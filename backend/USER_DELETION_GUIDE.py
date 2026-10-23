@@ -84,7 +84,7 @@ python app.py
 
 Now user deletions will automatically clean up Firebase Auth!
 
-## Usage Examples
+## Usage Example
 
 ### Python (Backend)
 ```python

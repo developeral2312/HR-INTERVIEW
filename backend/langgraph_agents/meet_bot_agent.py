@@ -1,6 +1,6 @@
 """
 Google Meet Bot LangGraph Agent
-Manages Google Meet session lifecycle with Groq LLM orchestration
+Manages Google Meet session lifecycle with Groq LLM orchestration.
 """
 
 import json

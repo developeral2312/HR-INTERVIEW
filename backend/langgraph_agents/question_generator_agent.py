@@ -6,7 +6,7 @@ Purpose: Generate intelligent interview questions based on:
 - Job description (requirements, responsibilities)
 - Previous answers (adaptive questioning)
 
-Features:
+Features:.
 - Technical questions (based on skills)
 - Behavioral questions (based on experience)
 - Scenario-based questions (based on job requirements)

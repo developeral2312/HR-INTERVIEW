@@ -5,7 +5,7 @@ This script initializes the entire application with MongoDB integration:
 1. Checks MongoDB connection
 2. Initializes all repositories
 3. Sets up required indexes
-4. Verifies all services are working
+4. Verifies all services are working.
 """
 
 import sys

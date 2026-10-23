@@ -5,7 +5,7 @@ Features:
 - Store analysis results
 - Track scores and predictions
 - Analysis history
-- Performance metrics
+- Performance metrics.
 """
 
 import logging

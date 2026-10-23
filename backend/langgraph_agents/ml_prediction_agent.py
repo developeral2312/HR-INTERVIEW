@@ -3,11 +3,10 @@ ML Prediction Agent using LangGraph + MCP Integration
 
 This agent handles:
 1. Salary Prediction using XGBoost models
-2. Job Possibility Prediction using XGBoost models
+2. Job Possibility Prediction using XGBoost models,
 
 Uses LangGraph for structured workflow and MCP for context optimization
 """
-
 from typing import TypedDict, Dict, Any, List
 from langgraph.graph import StateGraph, END
 import logging
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 class PredictionState(TypedDict):
     """State for ML prediction workflow"""
     # Input
-    prediction_type: str  # "salary" or "job_possibility"
+    prediction_type: str  
     years_experience: float
     education_level: str
     job_level: str

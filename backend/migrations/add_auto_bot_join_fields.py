@@ -1,7 +1,7 @@
 """
 Database Migration: Add Auto-Bot Join Fields
 Date: February 5, 2026
-Purpose: Add new fields for automatic bot joining functionality
+Purpose: Add new fields for automatic bot joining functionality.
 """
 
 import os

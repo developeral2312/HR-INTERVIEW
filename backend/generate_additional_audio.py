@@ -1,6 +1,6 @@
 """
 Generate Additional Test Audio Samples
-Creates 2 more realistic interview audio samples
+Creates 2 more realistic interview audio samples.
 """
 
 from gtts import gTTS

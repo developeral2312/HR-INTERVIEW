@@ -19,6 +19,8 @@ declare global {
     }
 }
 
+
+
 interface VideoInterviewProps {
     ngrokUrl?: string;
     appID?: number;

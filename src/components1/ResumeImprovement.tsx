@@ -14,6 +14,7 @@ interface ResumeImprovementProps {
   resumeFile: File | null;
 }
 
+
 interface ImprovementSuggestion {
   area: string;
   suggestions: string[];

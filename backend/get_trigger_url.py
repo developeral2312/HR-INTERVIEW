@@ -1,5 +1,5 @@
 """
-Get the full trigger URL with token for testing
+Get the full trigger URL with token for testing.
 """
 import requests
 

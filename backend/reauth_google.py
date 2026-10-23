@@ -4,49 +4,59 @@ Run this to refresh your Google Calendar API token
 """
 
 import os
+import sys
+import webbrowser
+
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
+    except Exception:
+        pass
+
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-# Scopes required
 SCOPES = ['https://www.googleapis.com/auth/calendar']
+CREDENTIALS_PATH = os.path.join(os.path.dirname(__file__), "google_credentials.json")
+TOKEN_PATH = os.path.join(os.path.dirname(__file__), "google_token.json")
 
-# Paths
-CREDENTIALS_PATH = "google_credentials.json"
-TOKEN_PATH = "google_token.json"
+print("="*80, flush=True)
+print("🔐 GOOGLE CALENDAR RE-AUTHENTICATION", flush=True)
+print("="*80, flush=True)
+print(f"📁 Credentials: {CREDENTIALS_PATH}", flush=True)
+print(f"💾 Token destination: {TOKEN_PATH}", flush=True)
+print(flush=True)
 
-print("="*80)
-print("🔐 GOOGLE CALENDAR RE-AUTHENTICATION")
-print("="*80)
-print(f"📁 Credentials: {CREDENTIALS_PATH}")
-print(f"💾 Token will be saved to: {TOKEN_PATH}")
-print()
-print("🌐 Opening browser for authentication...")
-print("   Please sign in with your Google account")
-print("   Grant Calendar permissions when prompted")
-print("="*80)
-
-# Delete old token if exists
+# Delete expired token if exists
 if os.path.exists(TOKEN_PATH):
-    os.remove(TOKEN_PATH)
-    print("🗑️  Deleted old token")
+    try:
+        os.remove(TOKEN_PATH)
+        print("🗑️ Removed expired token", flush=True)
+    except Exception as e:
+        print(f"⚠️ Could not delete old token: {e}", flush=True)
 
-# Start OAuth flow
+print("🌐 Starting local authentication server on port 8080...", flush=True)
+print("👉 Your default browser will open automatically.", flush=True)
+print("👉 Sign in with your Google Account and click 'Continue' / 'Allow'.", flush=True)
+print("="*80, flush=True)
+
 flow = InstalledAppFlow.from_client_secrets_file(
-    CREDENTIALS_PATH, 
-    SCOPES,
-    redirect_uri='http://localhost:8080/'
+    CREDENTIALS_PATH,
+    SCOPES
 )
 
-# Run local server for OAuth callback
-creds = flow.run_local_server(port=8080)
+# run_local_server handles state, local HTTP server, and browser opening
+creds = flow.run_local_server(
+    port=8080,
+    prompt='consent',
+    access_type='offline'
+)
 
-# Save credentials
+# Save renewed token
 with open(TOKEN_PATH, 'w') as token_file:
     token_file.write(creds.to_json())
 
-print()
-print("="*80)
-print("✅ AUTHENTICATION SUCCESSFUL!")
-print("="*80)
-print(f"💾 Token saved to: {TOKEN_PATH}")
-print("🚀 You can now run the test script again")
-print("="*80)
+print("="*80, flush=True)
+print("✅ GOOGLE CALENDAR AUTHENTICATION SUCCESSFUL!", flush=True)
+print(f"💾 Fresh token saved to: {TOKEN_PATH}", flush=True)
+print("🚀 Official Google Meet link generation is now 100% active!", flush=True)
+print("="*80, flush=True)

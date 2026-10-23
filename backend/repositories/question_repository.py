@@ -5,7 +5,7 @@ Handles MongoDB operations for interview questions:
 - Store generated questions
 - Retrieve questions by interview ID
 - Update questions with answers
-- Track question analytics
+- Track question analytics.
 """
 
 import logging

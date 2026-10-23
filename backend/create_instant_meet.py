@@ -5,7 +5,7 @@ No calendar invite needed - just an instant meeting link!
 Usage:
     python create_instant_meet.py
 
-Author: AI Recruiter Team
+Author: AI Recruiter Team.
 """
 
 import webbrowser

@@ -5,7 +5,7 @@ Features:
 - Schedule interviews
 - Generate interview links
 - Track interview status
-- Interview history
+- Interview history.
 """
 
 import logging

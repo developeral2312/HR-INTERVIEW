@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { FASTAPI_ENDPOINTS } from '@/config/api';
 
+
+
 interface QuestionItem {
   question_id?: string;
   question: string;
@@ -32,6 +34,11 @@ interface InterviewData {
   status: string;
   duration_minutes?: number;
   questions?: QuestionItem[];
+  interview_type?: string;
+  meet_link?: string;
+  calendar_link?: string;
+  google_calendar_add_url?: string;
+  scheduled_for?: string;
 }
 
 type OnboardingStep = 
@@ -40,7 +47,8 @@ type OnboardingStep =
   | 'anti_cheating'
   | 'hardware_check'
   | 'active_session'
-  | 'completed';
+  | 'completed'
+  | 'human_meet_redirect';
 
 const SILENCE_THRESHOLD_SECONDS = 2.5;
 
@@ -180,6 +188,13 @@ export const InteractiveInterview: React.FC = () => {
         setCandidateName(doc.candidate_name || '');
         setCandidateEmail(doc.candidate_email || '');
         setCandidateRole(doc.job_title || 'AI / ML Engineer');
+        
+        // If this is a live Human Recruiter interview (Google Meet), route to Meet screen!
+        if (doc.interview_type === 'human') {
+          setCurrentStep('human_meet_redirect');
+          setIsLoading(false);
+          return;
+        }
         
         const duration = doc.duration_minutes || 45;
         setSessionSecondsLeft(duration * 60);
@@ -736,66 +751,85 @@ export const InteractiveInterview: React.FC = () => {
 
   // ────────────────────────── SHARED ENTERPRISE SHELL ──────────────────────────
   const renderOnboardingHeader = (activeStepNumber: 1 | 2 | 3) => (
-    <header className="border-b border-white/[0.08] bg-slate-950/80 backdrop-blur-xl sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
+    <header className="border-b border-white/[0.08] bg-slate-950/90 backdrop-blur-2xl sticky top-0 z-30 shadow-lg shadow-black/40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Brand & Security Certification */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-white font-black text-base">
-            AG
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 text-white font-black text-sm tracking-tight border border-white/20">
+            VS
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold tracking-tight text-white">ANTIGRAVITY // ASSESS</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                PROCTOR V3.2
+            <div className="flex items-center gap-2.5">
+              <span className="text-sm font-bold tracking-tight text-white font-sans">VIAMOD SOLUTION</span>
+              <span className="text-slate-600 text-xs font-light">|</span>
+              <span className="text-xs font-semibold text-cyan-400 tracking-wide uppercase">Assessment Portal</span>
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                AI Proctored
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">Autonomous Enterprise Technical Examination Portal</p>
+            <p className="text-[11px] text-slate-400 font-medium">Enterprise Candidate Evaluation & Verification System</p>
           </div>
         </div>
 
         {/* Stepper Progress */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+        <div className="flex items-center gap-2 sm:gap-3 bg-slate-900/60 p-1.5 rounded-2xl border border-slate-800/80 backdrop-blur">
+          {/* Step 1 */}
+          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             activeStepNumber === 1 
-              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/20' 
+              ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/20' 
               : activeStepNumber > 1
-              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
               : 'text-slate-500'
           }`}>
-            {activeStepNumber > 1 ? <Check size={14} className="text-emerald-400" /> : <span className="w-4 h-4 rounded-full bg-cyan-500/30 flex items-center justify-center text-[10px]">1</span>}
+            {activeStepNumber > 1 ? (
+              <span className="w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <Check size={11} className="stroke-[3]" />
+              </span>
+            ) : (
+              <span className="w-4 h-4 rounded-full bg-cyan-500/30 border border-cyan-400/50 flex items-center justify-center text-[10px] text-cyan-200 font-bold">1</span>
+            )}
             <span>Identity Dossier</span>
           </div>
 
-          <div className="w-4 h-px bg-slate-800" />
+          <div className={`w-3 sm:w-5 h-0.5 ${activeStepNumber > 1 ? 'bg-emerald-500/40' : 'bg-slate-800'}`} />
 
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          {/* Step 2 */}
+          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             activeStepNumber === 2 
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/20' 
+              ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/20' 
               : activeStepNumber > 2
-              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
               : 'text-slate-500'
           }`}>
-            {activeStepNumber > 2 ? <Check size={14} className="text-emerald-400" /> : <span className="w-4 h-4 rounded-full bg-amber-500/30 flex items-center justify-center text-[10px]">2</span>}
+            {activeStepNumber > 2 ? (
+              <span className="w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <Check size={11} className="stroke-[3]" />
+              </span>
+            ) : (
+              <span className="w-4 h-4 rounded-full bg-amber-500/30 border border-amber-400/50 flex items-center justify-center text-[10px] text-amber-200 font-bold">2</span>
+            )}
             <span>Integrity Protocol</span>
           </div>
 
-          <div className="w-4 h-px bg-slate-800" />
+          <div className={`w-3 sm:w-5 h-0.5 ${activeStepNumber > 2 ? 'bg-emerald-500/40' : 'bg-slate-800'}`} />
 
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          {/* Step 3 */}
+          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             activeStepNumber === 3 
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20' 
+              ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20' 
               : 'text-slate-500'
           }`}>
-            <span className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center text-[10px]">3</span>
+            <span className="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] text-slate-400 font-bold">3</span>
             <span>Sensor Calibration</span>
           </div>
         </div>
 
         {/* Security / Session Credentials */}
         <div className="hidden lg:flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg font-mono">
+          <div className="flex items-center gap-2 text-slate-300 bg-slate-900/90 border border-slate-800 px-3.5 py-1.5 rounded-xl font-mono text-[11px] shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <Lock size={12} className="text-emerald-400" />
             <span>TLS-256 ENCRYPTED</span>
           </div>
@@ -817,8 +851,12 @@ export const InteractiveInterview: React.FC = () => {
 
         <div className="p-6 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center font-black text-slate-950 text-sm">AG</div>
-            <span className="font-bold tracking-tight text-white text-sm">ANTIGRAVITY // ENTERPRISE ASSESSMENT</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black text-white text-xs">VS</div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold tracking-tight text-white text-sm">VIAMOD SOLUTION</span>
+              <span className="text-slate-600 text-xs font-light">|</span>
+              <span className="text-xs font-semibold text-cyan-400 tracking-wide uppercase">Assessment Portal</span>
+            </div>
           </div>
           <span className="text-xs font-mono text-slate-500">SECURE DISPATCH CLIENT</span>
         </div>
@@ -850,14 +888,14 @@ export const InteractiveInterview: React.FC = () => {
                   placeholder="e.g. b1d38fb6-7485-46c6-839f-1887e24c2a01"
                   value={interviewId}
                   onChange={e => setInterviewId(e.target.value)}
-                  className="bg-slate-950 border-slate-700/80 text-white font-mono text-xs h-11"
+                  className="bg-slate-950 border-slate-700/80 text-white font-mono text-xs h-11 rounded-xl"
                 />
               </div>
 
               <Button
                 onClick={() => loadInterview(interviewId)}
                 disabled={!interviewId.trim() || isLoading}
-                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 h-11 text-sm font-semibold shadow-lg shadow-cyan-500/20"
+                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 h-11 text-sm font-semibold shadow-lg shadow-cyan-500/20 rounded-xl"
               >
                 {isLoading ? <Loader2 className="animate-spin mr-2" size={16} /> : <Play className="mr-2" size={16} />}
                 Authenticate & Launch Session
@@ -866,8 +904,116 @@ export const InteractiveInterview: React.FC = () => {
           </motion.div>
         </div>
 
-        <div className="p-4 text-center text-[11px] text-slate-600 border-t border-white/[0.04]">
-          Confidential & Proprietary • Antigravity Autonomous Recruiter Suite • SOC-2 Type II Certified
+        <div className="p-4 text-center text-[11px] text-slate-500 border-t border-white/[0.04]">
+          Confidential Evaluation Environment • Viamod Solution Private Limited • Autonomous Recruiter Suite
+        </div>
+      </div>
+    );
+  }
+
+  // SCREEN: Human Recruiter Interview via Google Meet
+  if (currentStep === 'human_meet_redirect') {
+    let meetUrl = interview?.meet_link || '';
+    if (!meetUrl.startsWith('https://meet.google.com')) {
+      const cleanId = (interview?.interview_id || interviewId || 'recruiter').replace(/[^a-zA-Z]/g, '') + 'viamodlive';
+      meetUrl = `https://meet.google.com/${cleanId.slice(0, 3)}-${cleanId.slice(3, 7)}-${cleanId.slice(7, 10)}`.toLowerCase();
+    }
+    const calUrl = interview?.google_calendar_add_url || interview?.calendar_link;
+
+    return (
+      <div className="min-h-screen bg-[#070A0F] text-slate-100 flex flex-col justify-between relative overflow-hidden">
+        {/* Ambient Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-blue-500/15 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
+
+        {/* Top Header */}
+        <div className="p-6 border-b border-white/[0.06] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white text-xs">VS</div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold tracking-tight text-white text-sm">VIAMOD SOLUTION</span>
+              <span className="text-slate-600 text-xs font-light">|</span>
+              <span className="text-xs font-semibold text-blue-400 tracking-wide uppercase">Live Human Interview</span>
+            </div>
+          </div>
+          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs py-1 px-3">
+            🎥 Google Meet Room
+          </Badge>
+        </div>
+
+        {/* Main Card */}
+        <div className="max-w-xl w-full mx-auto px-4 py-8">
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl space-y-6">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 mx-auto flex items-center justify-center shadow-lg shadow-blue-500/10">
+                <Video size={34} />
+              </div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Human Recruiter Video Call</h1>
+              <p className="text-slate-400 text-xs leading-relaxed max-w-md mx-auto">
+                This interview is scheduled as a live 1-on-1 video call with our Human Recruiter on <span className="text-blue-400 font-semibold">Google Meet</span>, not an automated AI bot session.
+              </p>
+            </div>
+
+            {/* Candidate & Interview Details */}
+            <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 space-y-2.5 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Position / Role</span>
+                <span className="text-white font-semibold">{interview?.job_title || candidateRole || 'Candidate Position'}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Candidate Name</span>
+                <span className="text-white font-medium">{interview?.candidate_name || candidateName}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Interview Format</span>
+                <span className="text-cyan-400 font-medium">1-on-1 Recruiter Video Call</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-slate-400">Google Meet URL</span>
+                <a href={meetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-mono truncate max-w-[240px]">
+                  {meetUrl}
+                </a>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3 pt-2">
+              <a
+                href={meetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold h-12 rounded-xl shadow-lg shadow-blue-600/30 transition-all text-sm"
+              >
+                <Video size={18} />
+                <span>🎥 Join Google Meet Video Call Now</span>
+              </a>
+
+              {calUrl && (
+                <a
+                  href={calUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium h-10 rounded-xl border border-slate-700/60 transition-all text-xs"
+                >
+                  <Clock size={15} />
+                  <span>📅 Add to Google Calendar</span>
+                </a>
+              )}
+            </div>
+
+            <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl text-[11px] text-slate-400 space-y-1">
+              <p className="font-semibold text-blue-300">💡 Instructions for Candidate:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+                <li>Click the button above to launch Google Meet directly.</li>
+                <li>Make sure your webcam and microphone permissions are allowed.</li>
+                <li>Please connect 5 minutes prior to the scheduled start time.</li>
+              </ul>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 text-center text-[11px] text-slate-500 border-t border-white/[0.04]">
+          Confidential Evaluation Environment • Viamod Solution Private Limited
         </div>
       </div>
     );
@@ -876,22 +1022,25 @@ export const InteractiveInterview: React.FC = () => {
   // SCREEN 1: Candidate Personal Details & Track Specialization (Full-Width Split Stage)
   if (currentStep === 'candidate_details') {
     return (
-      <div className="min-h-screen bg-[#070A0F] text-slate-100 flex flex-col justify-between relative overflow-hidden">
+      <div className="min-h-screen bg-[#070913] text-slate-100 flex flex-col justify-between relative overflow-hidden font-sans">
         {/* Header with Stepper */}
         {renderOnboardingHeader(1)}
 
-        {/* Ambient Stage Lights */}
-        <div className="absolute top-20 right-1/4 w-[600px] h-[300px] bg-cyan-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-20 left-1/4 w-[600px] h-[300px] bg-blue-500/5 blur-3xl pointer-events-none" />
+        {/* Ambient Stage Lights & Background Glow */}
+        <div className="absolute top-0 right-1/4 w-[700px] h-[350px] bg-cyan-500/10 blur-[130px] pointer-events-none rounded-full" />
+        <div className="absolute bottom-10 left-1/4 w-[700px] h-[350px] bg-blue-600/10 blur-[140px] pointer-events-none rounded-full" />
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
 
         {/* Main Split Layout */}
-        <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex-1 flex items-center">
+        <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex-1 flex items-center relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-stretch">
             
             {/* Left Column (5 Cols): Assessment Briefing & Role Track */}
-            <div className="lg:col-span-5 flex flex-col justify-between space-y-6 bg-slate-900/40 border border-white/[0.06] p-7 md:p-8 rounded-2xl backdrop-blur-xl">
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
+            <div className="lg:col-span-5 flex flex-col justify-between space-y-6 bg-slate-900/60 border border-slate-700/60 p-7 md:p-8 rounded-3xl backdrop-blur-2xl shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 opacity-80" />
+              
+              <div className="space-y-5">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shadow-sm">
                   <Activity size={13} className="text-cyan-400" />
                   <span>Technical Evaluation Dossier</span>
                 </div>
@@ -901,152 +1050,174 @@ export const InteractiveInterview: React.FC = () => {
                     Candidate Identity Verification
                   </h1>
                   <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
-                    Verify your legal name, contact email, and target engineering specialization before initializing the proctored runtime tokens.
+                    Confirm your details to begin your AI proctored interview session.
                   </p>
                 </div>
 
                 {/* Key Session Specs */}
-                <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Target Role Track</span>
-                    <span className="font-semibold text-white bg-slate-800/80 px-2.5 py-0.5 rounded border border-slate-700/80">
+                <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800/90 space-y-3.5 shadow-inner">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-400 font-medium shrink-0">Target Role Track</span>
+                    <span className="font-bold text-cyan-300 bg-cyan-950/60 px-3 py-1 rounded-lg border border-cyan-800/60 tracking-wide text-[11px] uppercase">
                       {candidateRole || 'AI / ML Engineer'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Assessment Format</span>
-                    <span className="font-semibold text-cyan-300">Autonomous Conversational AI</span>
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-400 font-medium shrink-0">Assessment Format</span>
+                    <span className="font-semibold text-slate-200 text-right">Autonomous AI Session</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Interaction Mode</span>
-                    <span className="font-semibold text-white">Adaptive Real-Time Voice Q&A</span>
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-400 font-medium shrink-0">Interaction Mode</span>
+                    <span className="font-semibold text-white text-right">Adaptive Voice Q&A</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Proctoring Telemetry</span>
-                    <span className="font-semibold text-emerald-400">Continuous Computer Vision</span>
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-400 font-medium shrink-0">Proctoring Telemetry</span>
+                    <span className="font-semibold text-emerald-400 flex items-center gap-1.5 text-right shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Continuous Computer Vision
+                    </span>
                   </div>
                 </div>
 
                 {/* Core Competencies Tested */}
-                <div className="space-y-2">
-                  <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Evaluation Focus Domains</span>
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800 text-slate-300 flex items-center gap-1.5">
-                      <Cpu size={13} className="text-cyan-400 shrink-0" />
-                      <span className="truncate">Neural Architectures</span>
+                <div className="space-y-2.5">
+                  <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Evaluation Focus Domains</span>
+                  <div className="grid grid-cols-2 gap-2.5 text-xs">
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-200 flex items-center gap-2 hover:border-cyan-500/40 transition-colors min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                        <Briefcase size={13} className="text-cyan-400" />
+                      </div>
+                      <span className="font-medium text-[11px] truncate">Core Competencies</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800 text-slate-300 flex items-center gap-1.5">
-                      <Layers size={13} className="text-blue-400 shrink-0" />
-                      <span className="truncate">RAG & Vector Retrieval</span>
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-200 flex items-center gap-2 hover:border-blue-500/40 transition-colors min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0">
+                        <Sparkles size={13} className="text-blue-400" />
+                      </div>
+                      <span className="font-medium text-[11px] truncate">Logic & Reasoning</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800 text-slate-300 flex items-center gap-1.5">
-                      <Wifi size={13} className="text-purple-400 shrink-0" />
-                      <span className="truncate">FastAPI & High-Load APIs</span>
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-200 flex items-center gap-2 hover:border-purple-500/40 transition-colors min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shrink-0">
+                        <Layers size={13} className="text-purple-400" />
+                      </div>
+                      <span className="font-medium text-[11px] truncate">Practical Scenarios</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800 text-slate-300 flex items-center gap-1.5">
-                      <ShieldCheck size={13} className="text-emerald-400 shrink-0" />
-                      <span className="truncate">Production Diagnostics</span>
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-slate-200 flex items-center gap-2 hover:border-emerald-500/40 transition-colors min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                        <ShieldCheck size={13} className="text-emerald-400" />
+                      </div>
+                      <span className="font-medium text-[11px] truncate">Communication Fit</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Session ID: {interviewId ? `${interviewId.slice(0, 12)}...` : 'N/A'}</span>
-                <span className="text-emerald-400 font-semibold">Ready for Dispatch</span>
+              <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+                <span className="font-mono text-slate-500">SESSION: {interviewId ? `${interviewId.slice(0, 14)}...` : 'N/A'}</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Ready for Dispatch
+                </span>
               </div>
             </div>
 
             {/* Right Column (7 Cols): Form Console */}
-            <div className="lg:col-span-7 bg-slate-900/70 border border-white/[0.08] p-7 md:p-9 rounded-2xl backdrop-blur-2xl shadow-2xl flex flex-col justify-between space-y-6">
-              <div className="space-y-5">
-                <div className="border-b border-slate-800 pb-3">
-                  <h2 className="text-lg font-bold text-white tracking-tight">Candidate Profile Credentials</h2>
-                  <p className="text-slate-400 text-xs">Verify details precisely as they appear on your legal documents and resume.</p>
+            <div className="lg:col-span-7 bg-slate-900/70 border border-slate-700/60 p-7 md:p-9 rounded-3xl backdrop-blur-2xl shadow-2xl flex flex-col justify-between space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 opacity-80" />
+
+              <div className="space-y-6">
+                <div className="border-b border-slate-800 pb-4">
+                  <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                    <span>Candidate Profile Credentials</span>
+                  </h2>
+                  <p className="text-slate-400 text-xs mt-1">Confirm your information matches your application records before proceeding.</p>
                 </div>
 
                 {errorMessage && (
-                  <div className="flex items-center gap-2 p-3.5 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">
-                    <AlertCircle size={16} className="shrink-0" />
+                  <div className="flex items-center gap-2.5 p-4 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-2xl">
+                    <AlertCircle size={16} className="shrink-0 text-red-400" />
                     <span>{errorMessage}</span>
                   </div>
                 )}
 
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
+                <div className="space-y-4.5">
+                  <div className="space-y-2">
                     <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                       <span>Full Legal Name</span>
-                      <span className="text-[10px] text-cyan-400 font-mono">REQUIRED</span>
+                      <span className="text-[10px] text-cyan-400 font-mono bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">REQUIRED</span>
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3.5 top-3.5 text-slate-500" size={17} />
+                      <User className="absolute left-4 top-3.5 text-slate-400" size={17} />
                       <Input
                         value={candidateName}
                         onChange={e => setCandidateName(e.target.value)}
                         placeholder="e.g. Aditya Verma"
-                        className="pl-10 bg-slate-950 border-slate-700/80 text-white text-sm h-11 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                        className="pl-11 bg-slate-950/90 border-slate-700/80 text-white text-sm h-12 rounded-xl focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all placeholder:text-slate-600"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                       <span>Registered Corporate / Personal Email</span>
-                      <span className="text-[10px] text-cyan-400 font-mono">REQUIRED</span>
+                      <span className="text-[10px] text-cyan-400 font-mono bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">REQUIRED</span>
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3.5 top-3.5 text-slate-500" size={17} />
+                      <Mail className="absolute left-4 top-3.5 text-slate-400" size={17} />
                       <Input
                         type="email"
                         value={candidateEmail}
                         onChange={e => setCandidateEmail(e.target.value)}
                         placeholder="candidate@example.com"
-                        className="pl-10 bg-slate-950 border-slate-700/80 text-white text-sm h-11 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                        className="pl-11 bg-slate-950/90 border-slate-700/80 text-white text-sm h-12 rounded-xl focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all placeholder:text-slate-600"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <label className="text-xs font-semibold text-slate-300">Role Track Designation</label>
                       <div className="relative">
-                        <Briefcase className="absolute left-3.5 top-3.5 text-slate-500" size={17} />
+                        <Briefcase className="absolute left-4 top-3.5 text-slate-400" size={17} />
                         <Input
                           value={candidateRole}
                           onChange={e => setCandidateRole(e.target.value)}
                           placeholder="e.g. AI / ML Engineer"
-                          className="pl-10 bg-slate-950 border-slate-700/80 text-white text-sm h-11"
+                          className="pl-11 bg-slate-950/90 border-slate-700/80 text-white text-sm h-12 rounded-xl focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all placeholder:text-slate-600"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <label className="text-xs font-semibold text-slate-300">Experience Tier</label>
-                      <select
-                        value={candidateExperience}
-                        onChange={e => setCandidateExperience(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-lg bg-slate-950 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-cyan-500"
-                      >
-                        <option value="0-1 Year">0-1 Year (Associate / Entry Level)</option>
-                        <option value="1-3 Years">1-3 Years (Intermediate Engineer)</option>
-                        <option value="3-5 Years">3-5 Years (Senior AI Specialist)</option>
-                        <option value="5+ Years">5+ Years (Staff / Lead Architect)</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={candidateExperience}
+                          onChange={e => setCandidateExperience(e.target.value)}
+                          className="w-full h-12 pl-4 pr-10 rounded-xl bg-slate-950/90 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer appearance-none"
+                        >
+                          <option value="0-1 Year">0-1 Year (Associate / Entry Level)</option>
+                          <option value="1-3 Years">1-3 Years (Intermediate Engineer)</option>
+                          <option value="3-5 Years">3-5 Years (Senior AI Specialist)</option>
+                          <option value="5+ Years">5+ Years (Staff / Lead Architect)</option>
+                        </select>
+                        <ChevronRight className="absolute right-4 top-4 text-slate-400 pointer-events-none rotate-90" size={16} />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-slate-800">
+              <div className="space-y-3 pt-6 border-t border-slate-800">
                 <Button
                   onClick={handleSaveDetails}
-                  className="w-full bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 h-12 text-sm font-bold shadow-lg shadow-cyan-500/20 text-white flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 h-12 text-sm font-bold shadow-xl shadow-cyan-500/25 text-white flex items-center justify-center gap-2 rounded-xl transition-all cursor-pointer group"
                 >
-                  <span>Confirm Profile & Proceed to Integrity Protocol</span>
-                  <ArrowRight size={17} />
+                  <span>Confirm & Continue</span>
+                  <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
                 </Button>
-                <p className="text-[11px] text-center text-slate-500">
-                  By continuing, your session credentials will be locked and telemetry logging will initialize.
+                <p className="text-[11px] text-center text-slate-500 flex items-center justify-center gap-1.5">
+                  <Lock size={12} className="text-slate-600" />
+                  <span>Session credentials are encrypted and locked upon submission.</span>
                 </p>
               </div>
             </div>
@@ -1054,8 +1225,8 @@ export const InteractiveInterview: React.FC = () => {
           </div>
         </main>
 
-        <footer className="p-4 text-center text-[11px] text-slate-600 border-t border-white/[0.04]">
-          Confidential Evaluation Environment • Antigravity Autonomous Recruiter Suite • SOC-2 Type II Certified
+        <footer className="p-4 text-center text-[11px] text-slate-500 border-t border-white/[0.04] relative z-10">
+          Confidential Evaluation Environment • Viamod Solution Private Limited • Autonomous Recruiter Suite
         </footer>
       </div>
     );
@@ -1064,106 +1235,122 @@ export const InteractiveInterview: React.FC = () => {
   // SCREEN 2: Anti-Cheating & Integrity Protocol (Full-Width Regulatory Specification)
   if (currentStep === 'anti_cheating') {
     return (
-      <div className="min-h-screen bg-[#070A0F] text-slate-100 flex flex-col justify-between relative overflow-hidden">
+      <div className="min-h-screen bg-[#070913] text-slate-100 flex flex-col justify-between relative overflow-hidden font-sans">
         {/* Header with Stepper */}
         {renderOnboardingHeader(2)}
 
         {/* Ambient Stage Lights */}
-        <div className="absolute top-20 left-1/3 w-[600px] h-[300px] bg-amber-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute top-10 left-1/3 w-[700px] h-[350px] bg-amber-500/10 blur-[130px] pointer-events-none rounded-full" />
+        <div className="absolute bottom-10 right-1/4 w-[700px] h-[350px] bg-cyan-500/10 blur-[140px] pointer-events-none rounded-full" />
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
 
         {/* Main Stage */}
-        <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex-1 flex flex-col justify-center">
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex-1 flex flex-col justify-center relative z-10">
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
             
             {/* Title Section */}
-            <div className="text-center space-y-2 max-w-2xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+            <div className="text-center space-y-3 max-w-xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30 shadow-sm">
                 <ShieldAlert size={14} className="text-amber-400" />
-                <span>Enterprise Proctoring Standards</span>
+                <span>Proctoring Guidelines & Integrity Protocol</span>
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-                Examination Integrity & Telemetry Protocol
+                Interview Rules & Code of Conduct
               </h1>
               <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
-                To guarantee equal opportunity and uncompromised evaluation rigor, this technical examination is monitored by continuous computer vision and acoustic telemetry.
+                Autonomous computer vision and acoustic sensors monitor this session to guarantee an authentic, fair evaluation.
               </p>
             </div>
 
             {errorMessage && (
-              <div className="max-w-2xl mx-auto flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">
-                <AlertCircle size={16} className="shrink-0" />
+              <div className="max-w-2xl mx-auto flex items-center gap-2.5 p-4 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-2xl">
+                <AlertCircle size={16} className="shrink-0 text-red-400" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {/* 3 Protocol Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/[0.08] backdrop-blur-xl space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                  <Eye size={20} />
+              {/* Card 1: Face the Camera */}
+              <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-700/60 backdrop-blur-2xl space-y-4 shadow-xl hover:border-cyan-500/50 transition-all group relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-500" />
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-sm group-hover:scale-105 transition-transform">
+                  <Eye size={22} />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-white text-sm">Gaze & Facial Orientation</h3>
+                <div className="space-y-1.5">
+                  <h3 className="font-bold text-white text-sm">Face the Camera</h3>
                   <p className="text-slate-400 text-xs leading-relaxed">
-                    Continuous computer vision maps head pose and pupil alignment in real time. Looking away, turning your head, or exiting the camera frame triggers immediate audit flags.
+                    Keep your head centered in the viewfinder. Frequent gaze shifts or stepping out of view will log proctoring flags.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-slate-800 text-[10px] text-cyan-400 font-mono">
-                  BENCHMARK: 0° YAW (FORWARD FACING)
+                <div className="pt-3 border-t border-slate-800 text-[10px] text-cyan-400 font-mono font-bold tracking-wide">
+                  RULE: STAY IN FRAME (100% FOCUS)
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/[0.08] backdrop-blur-xl space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                  <Radio size={20} />
+              {/* Card 2: Stay on this Tab */}
+              <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-700/60 backdrop-blur-2xl space-y-4 shadow-xl hover:border-amber-500/50 transition-all group relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm group-hover:scale-105 transition-transform">
+                  <Radio size={22} />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-white text-sm">Window & Viewport Confinement</h3>
+                <div className="space-y-1.5">
+                  <h3 className="font-bold text-white text-sm">Stay on this Tab</h3>
                   <p className="text-slate-400 text-xs leading-relaxed">
-                    The examination runtime strictly logs window focus events. Navigating away from this tab, minimizing browser windows, or utilizing secondary displays is recorded with timestamps.
+                    Do not switch tabs, minimize the browser, or use multiple monitors. All window blur events are recorded.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-slate-800 text-[10px] text-amber-400 font-mono">
-                  BENCHMARK: 100% FOCUS CONFINEMENT
+                <div className="pt-3 border-t border-slate-800 text-[10px] text-amber-400 font-mono font-bold tracking-wide">
+                  RULE: ZERO TAB SWITCHING
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/[0.08] backdrop-blur-xl space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                  <Mic size={20} />
+              {/* Card 3: Quiet Room */}
+              <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-700/60 backdrop-blur-2xl space-y-4 shadow-xl hover:border-purple-500/50 transition-all group relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-sm group-hover:scale-105 transition-transform">
+                  <Mic size={22} />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-white text-sm">Acoustic Isolation & Solitary Room</h3>
+                <div className="space-y-1.5">
+                  <h3 className="font-bold text-white text-sm">Quiet & Private Room</h3>
                   <p className="text-slate-400 text-xs leading-relaxed">
-                    Dual-channel spectral filters isolate primary speech. Secondary vocal presence, background whispering, or off-camera assistance will result in instant disqualification.
+                    Sit in a quiet room alone. Background chatter, whispered assistance, or unauthorized AI tools are prohibited.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-slate-800 text-[10px] text-purple-400 font-mono">
-                  BENCHMARK: SINGLE-SPEAKER CHANNEL
+                <div className="pt-3 border-t border-slate-800 text-[10px] text-purple-400 font-mono font-bold tracking-wide">
+                  RULE: NO OUTSIDE HELP / NO AI
                 </div>
               </div>
 
             </div>
 
             {/* Sole Authorship Declaration Box */}
-            <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 backdrop-blur-xl">
-              <label className="flex items-start gap-3.5 cursor-pointer text-xs text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={agreedToIntegrity}
-                  onChange={e => setAgreedToIntegrity(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 bg-slate-950 border-slate-700"
-                />
+            <div 
+              onClick={() => setAgreedToIntegrity(!agreedToIntegrity)}
+              className={`p-5 rounded-2xl border transition-all cursor-pointer backdrop-blur-xl ${
+                agreedToIntegrity
+                  ? 'bg-cyan-500/10 border-cyan-500/40 shadow-lg shadow-cyan-500/10'
+                  : 'bg-slate-900/70 border-slate-700/70 hover:border-slate-600'
+              }`}
+            >
+              <div className="flex items-start gap-3.5">
+                <div className={`mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center border transition-all shrink-0 ${
+                  agreedToIntegrity
+                    ? 'bg-cyan-500 border-cyan-400 text-white shadow-sm shadow-cyan-500/50'
+                    : 'bg-slate-950 border-slate-700'
+                }`}>
+                  {agreedToIntegrity && <Check size={13} className="stroke-[3]" />}
+                </div>
                 <div className="space-y-1">
                   <span className="font-bold text-white text-sm block">
-                    Declaration of Sole Authorship & Algorithmic Monitoring Consent
+                    Candidate Honor Code & Consent Agreement
                   </span>
-                  <span className="text-slate-400 text-xs leading-relaxed block">
-                    I certify under penalty of evaluation disqualification that I am the registered candidate and will complete this examination independently without third-party assistance, unauthorized generative tools, or external materials. I consent to real-time biometric and audiovisual telemetry recording.
-                  </span>
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    I declare that I will complete this interview independently without external assistance, proxy test-takers, or third-party AI tools. I consent to real-time proctoring telemetry via my webcam and microphone.
+                  </p>
                 </div>
-              </label>
+              </div>
             </div>
 
             {/* Navigation Actions */}
@@ -1171,25 +1358,29 @@ export const InteractiveInterview: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep('candidate_details')}
-                className="border-slate-800 text-slate-300 hover:bg-slate-800/80 h-11 text-xs px-5"
+                className="border-slate-700 bg-slate-900/60 text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl h-12 text-xs px-6 font-semibold transition-all cursor-pointer"
               >
-                ← Return to Profile
+                ← Back to Dossier
               </Button>
               <Button
                 onClick={handleProceedToHardware}
                 disabled={!agreedToIntegrity}
-                className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold h-12 px-8 text-sm shadow-xl shadow-orange-500/20"
+                className={`font-bold h-12 px-8 text-xs sm:text-sm rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                  agreedToIntegrity
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white shadow-xl shadow-orange-500/25'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
+                }`}
               >
-                <span>Acknowledge Protocol & Calibrate Sensors</span>
-                <ArrowRight size={17} className="ml-2" />
+                <span>Accept & Calibrate Sensors</span>
+                <ArrowRight size={17} />
               </Button>
             </div>
 
           </motion.div>
         </main>
 
-        <footer className="p-4 text-center text-[11px] text-slate-600 border-t border-white/[0.04]">
-          Confidential Evaluation Environment • Antigravity Autonomous Recruiter Suite • SOC-2 Type II Certified
+        <footer className="p-4 text-center text-[11px] text-slate-500 border-t border-white/[0.04] relative z-10">
+          Confidential Evaluation Environment • Viamod Solution Private Limited • Autonomous Recruiter Suite
         </footer>
       </div>
     );
@@ -1198,33 +1389,38 @@ export const InteractiveInterview: React.FC = () => {
   // SCREEN 3: Hardware Diagnostics & Sensor Calibration (Split Studio Layout)
   if (currentStep === 'hardware_check') {
     return (
-      <div className="min-h-screen bg-[#070A0F] text-slate-100 flex flex-col justify-between relative overflow-hidden">
+      <div className="min-h-screen bg-[#070913] text-slate-100 flex flex-col justify-between relative overflow-hidden font-sans">
         {/* Header with Stepper */}
         {renderOnboardingHeader(3)}
 
         {/* Ambient Stage Lights */}
-        <div className="absolute top-20 right-1/3 w-[600px] h-[300px] bg-emerald-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-1/3 w-[700px] h-[350px] bg-emerald-500/10 blur-[130px] pointer-events-none rounded-full" />
+        <div className="absolute bottom-10 left-1/4 w-[700px] h-[350px] bg-cyan-500/10 blur-[140px] pointer-events-none rounded-full" />
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none" />
 
         {/* Main Stage */}
-        <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex-1 flex items-center">
+        <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex-1 flex items-center relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-stretch">
             
             {/* Left Column (7 Cols): Optical Reticle Viewfinder */}
-            <div className="lg:col-span-7 bg-slate-900/50 border border-white/[0.08] p-6 rounded-2xl backdrop-blur-2xl shadow-2xl flex flex-col justify-between space-y-4">
+            <div className="lg:col-span-7 bg-slate-900/70 border border-slate-700/60 p-7 rounded-3xl backdrop-blur-2xl shadow-2xl flex flex-col justify-between space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+              
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
                   <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-                    Optical Viewfinder // HD 1080p
+                    Optical Viewfinder • HD 1080p
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
+                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800/60 flex items-center gap-1.5 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                   WEBRTC STREAM ACTIVE
                 </span>
               </div>
 
               {/* Viewfinder Window */}
-              <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
+              <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -1237,63 +1433,68 @@ export const InteractiveInterview: React.FC = () => {
                 {/* High-Tech HUD Reticle Brackets */}
                 <div className="absolute inset-0 pointer-events-none p-6 flex flex-col justify-between">
                   <div className="flex justify-between">
-                    <div className="w-6 h-6 border-t-2 border-l-2 border-cyan-400/80" />
-                    <div className="w-6 h-6 border-t-2 border-r-2 border-cyan-400/80" />
+                    <div className="w-7 h-7 border-t-2 border-l-2 border-cyan-400/80 rounded-tl-sm" />
+                    <div className="w-7 h-7 border-t-2 border-r-2 border-cyan-400/80 rounded-tr-sm" />
                   </div>
                   
                   {/* Subtle Biometric Alignment Oval */}
                   <div className="self-center w-48 h-60 rounded-full border border-dashed transition-all duration-300 flex items-center justify-center">
                     <div className={`w-full h-full rounded-full transition-all duration-300 ${
                       faceStatus === 'straight'
-                        ? 'border-2 border-emerald-400/60 bg-emerald-500/5 shadow-2xl shadow-emerald-500/20'
+                        ? 'border-2 border-emerald-400/80 bg-emerald-500/10 shadow-2xl shadow-emerald-500/30'
                         : faceStatus === 'looking_away'
-                        ? 'border-2 border-amber-400 bg-amber-500/10'
-                        : 'border-2 border-red-400 bg-red-500/10'
+                        ? 'border-2 border-amber-400 bg-amber-500/15'
+                        : 'border-2 border-red-400 bg-red-500/15'
                     }`} />
                   </div>
 
                   <div className="flex justify-between">
-                    <div className="w-6 h-6 border-b-2 border-l-2 border-cyan-400/80" />
-                    <div className="w-6 h-6 border-b-2 border-r-2 border-cyan-400/80" />
+                    <div className="w-7 h-7 border-b-2 border-l-2 border-cyan-400/80 rounded-bl-sm" />
+                    <div className="w-7 h-7 border-b-2 border-r-2 border-cyan-400/80 rounded-br-sm" />
                   </div>
                 </div>
 
                 {/* HUD Status Pill */}
                 <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md shadow-lg ${
+                  <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md shadow-lg ${
                     faceStatus === 'straight'
-                      ? 'bg-emerald-500/80 text-white'
+                      ? 'bg-emerald-500/90 text-white'
                       : faceStatus === 'looking_away'
-                      ? 'bg-amber-500/90 text-slate-950 font-bold animate-bounce'
-                      : 'bg-red-500/90 text-white font-bold animate-pulse'
+                      ? 'bg-amber-500 text-slate-950 font-bold animate-bounce'
+                      : 'bg-red-500 text-white font-bold animate-pulse'
                   }`}>
                     <Eye size={13} />
                     {faceAlertMessage}
                   </span>
 
-                  <span className="text-[10px] font-mono text-slate-300 bg-slate-950/80 px-2 py-0.5 rounded backdrop-blur">
+                  <span className="text-[10px] font-mono text-slate-300 bg-slate-950/80 px-2.5 py-1 rounded-lg backdrop-blur border border-slate-800">
                     30 FPS • 720p
                   </span>
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-400 flex items-center justify-between">
+              <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1">
                 <span>Align your face within the biometric center reticle.</span>
-                <span className="text-emerald-400 font-semibold">Continuous Tracking Enabled</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <Check size={13} />
+                  Continuous Tracking Enabled
+                </span>
               </div>
             </div>
 
             {/* Right Column (5 Cols): Sensor Readiness Console */}
-            <div className="lg:col-span-5 bg-slate-900/60 border border-white/[0.08] p-7 rounded-2xl backdrop-blur-2xl shadow-2xl flex flex-col justify-between space-y-6">
+            <div className="lg:col-span-5 bg-slate-900/70 border border-slate-700/60 p-7 rounded-3xl backdrop-blur-2xl shadow-2xl flex flex-col justify-between space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
+
               <div className="space-y-4">
                 <div className="border-b border-slate-800 pb-3">
                   <h2 className="text-lg font-bold text-white tracking-tight">Audiovisual Sensor Diagnostics</h2>
-                  <p className="text-slate-400 text-xs">Verify hardware input calibration before launching the proctored interview room.</p>
+                  <p className="text-slate-400 text-xs mt-0.5">Verify hardware input calibration before launching the proctored interview room.</p>
                 </div>
 
                 {errorMessage && (
-                  <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">
-                    <AlertCircle size={16} className="shrink-0" />
+                  <div className="flex items-center gap-2.5 p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-2xl">
+                    <AlertCircle size={16} className="shrink-0 text-red-400" />
                     <span>{errorMessage}</span>
                   </div>
                 )}
@@ -1301,42 +1502,46 @@ export const InteractiveInterview: React.FC = () => {
                 {/* Diagnostics List */}
                 <div className="space-y-3">
                   {/* Camera Status */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2.5">
-                      <Camera size={16} className="text-cyan-400" />
+                  <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                        <Camera size={16} />
+                      </div>
                       <div>
                         <span className="font-semibold text-white block">Optical Video Transducer</span>
                         <span className="text-slate-400 text-[11px]">WebRTC 720p / 30 FPS Stream</span>
                       </div>
                     </div>
-                    <span className={cameraAllowed ? "text-emerald-400 font-mono font-bold" : "text-amber-400 font-mono font-bold"}>
+                    <span className={cameraAllowed ? "text-emerald-400 font-mono font-bold bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-800/50" : "text-amber-400 font-mono font-bold"}>
                       {cameraAllowed ? "ONLINE" : "PENDING"}
                     </span>
                   </div>
 
                   {/* Microphone Status with Equalizer */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2.5 text-xs">
+                  <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Mic size={16} className="text-purple-400" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                          <Mic size={16} />
+                        </div>
                         <div>
                           <span className="font-semibold text-white block">Acoustic Vocal Transducer</span>
                           <span className="text-slate-400 text-[11px]">48kHz Spectral Audio Channel</span>
                         </div>
                       </div>
-                      <span className="text-slate-200 font-mono font-bold">{audioLevel}%</span>
+                      <span className="text-slate-200 font-mono font-bold bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800">{audioLevel}%</span>
                     </div>
 
                     {/* Equalizer Frequency Bars */}
-                    <div className="flex items-end gap-1 h-5 pt-1">
+                    <div className="flex items-end gap-1.5 h-6 pt-1">
                       {[15, 30, 60, 45, 80, 65, 90, 50, 70, 40, 25, 10].map((base, i) => {
-                        const dynamicHeight = Math.min(100, Math.max(10, Math.round((audioLevel / 100) * base * 1.5)));
+                        const dynamicHeight = Math.min(100, Math.max(12, Math.round((audioLevel / 100) * base * 1.5)));
                         return (
                           <div
                             key={i}
                             style={{ height: `${dynamicHeight}%` }}
                             className={`flex-1 rounded-sm transition-all duration-75 ${
-                              audioLevel > 15 ? 'bg-cyan-400 shadow-sm shadow-cyan-400/50' : 'bg-slate-800'
+                              audioLevel > 15 ? 'bg-cyan-400 shadow-sm shadow-cyan-400/60' : 'bg-slate-800'
                             }`}
                           />
                         );
@@ -1345,19 +1550,21 @@ export const InteractiveInterview: React.FC = () => {
                   </div>
 
                   {/* Telemetry Tracking */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2.5">
-                      <Eye size={16} className="text-emerald-400" />
+                  <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <Eye size={16} />
+                      </div>
                       <div>
                         <span className="font-semibold text-white block">Gaze Landmark Telemetry</span>
                         <span className="text-slate-400 text-[11px]">Computer Vision Model</span>
                       </div>
                     </div>
-                    <span className="text-emerald-400 font-mono font-bold">CALIBRATED</span>
+                    <span className="text-emerald-400 font-mono font-bold bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-800/50">CALIBRATED</span>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-xs text-slate-400 space-y-1">
+                <div className="p-4 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 text-xs text-slate-400 space-y-1">
                   <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
                     <Info size={14} />
                     <span>Examination Execution Note</span>
@@ -1372,7 +1579,7 @@ export const InteractiveInterview: React.FC = () => {
                 <Button
                   onClick={handleEnterInterviewRoom}
                   disabled={!cameraAllowed || !micAllowed}
-                  className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 h-13 text-base font-bold shadow-xl shadow-emerald-500/20 text-white"
+                  className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 h-13 text-sm sm:text-base font-bold shadow-xl shadow-emerald-500/25 text-white rounded-xl transition-all cursor-pointer"
                 >
                   🚀 Initiate Proctored Technical Examination
                 </Button>
@@ -1382,8 +1589,8 @@ export const InteractiveInterview: React.FC = () => {
           </div>
         </main>
 
-        <footer className="p-4 text-center text-[11px] text-slate-600 border-t border-white/[0.04]">
-          Confidential Evaluation Environment • Antigravity Autonomous Recruiter Suite • SOC-2 Type II Certified
+        <footer className="p-4 text-center text-[11px] text-slate-500 border-t border-white/[0.04] relative z-10">
+          Confidential Evaluation Environment • Viamod Solution Private Limited • Autonomous Recruiter Suite
         </footer>
       </div>
     );
@@ -1398,8 +1605,12 @@ export const InteractiveInterview: React.FC = () => {
 
         <div className="p-6 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center font-black text-slate-950 text-sm">AG</div>
-            <span className="font-bold tracking-tight text-white text-sm">ANTIGRAVITY // EXAMINATION ARCHIVE</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center font-black text-slate-950 text-xs">VS</div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold tracking-tight text-white text-sm">VIAMOD SOLUTION</span>
+              <span className="text-slate-600 text-xs font-light">|</span>
+              <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">Examination Archive</span>
+            </div>
           </div>
           <span className="text-xs font-mono text-emerald-400">TELEMETRY SECURED</span>
         </div>
@@ -1437,15 +1648,15 @@ export const InteractiveInterview: React.FC = () => {
 
             <Button
               onClick={() => navigate('/hr-resume-analysis')}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 h-11 text-xs font-semibold"
+              className="w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 h-11 text-xs font-semibold rounded-xl"
             >
               Return to HR Analytics Dashboard
             </Button>
           </motion.div>
         </div>
 
-        <div className="p-4 text-center text-[11px] text-slate-600 border-t border-white/[0.04]">
-          Confidential Evaluation Environment • Antigravity Autonomous Recruiter Suite • SOC-2 Type II Certified
+        <div className="p-4 text-center text-[11px] text-slate-500 border-t border-white/[0.04]">
+          Confidential Evaluation Environment • Viamod Solution Private Limited • Autonomous Recruiter Suite
         </div>
       </div>
     );
@@ -1773,8 +1984,8 @@ export const InteractiveInterview: React.FC = () => {
       </main>
 
       {/* FOOTER */}
-      <footer className="p-3 text-center text-[11px] text-slate-600 border-t border-white/[0.04]">
-        Confidential Evaluation Environment • Antigravity Autonomous Recruiter Suite • SOC-2 Type II Certified
+      <footer className="p-3 text-center text-[11px] text-slate-500 border-t border-white/[0.04]">
+        Confidential Evaluation Environment • Viamod Solution Private Limited • Autonomous Recruiter Suite
       </footer>
 
     </div>

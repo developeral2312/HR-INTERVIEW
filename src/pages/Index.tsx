@@ -18,23 +18,24 @@ import {
   Linkedin,
   Twitter,
   Moon,
-  Sun
+  Sun,
+  Bot,
+  Zap,
+  Sparkles,
+  Activity,
+  CheckCircle2,
+  Layers,
+  Lock,
+  Award
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import Login from '../components/ui/login';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { motion, useInView } from "framer-motion";
 import { useTheme } from '../context/ThemeContext';
-import { Button as ChakraButton, Container, Box } from '@chakra-ui/react';
 import Chatbot from '../components/ui/chatbot';
-import { ResumeAnalysisContainer } from "../components1/ResumeAnalysisContainer";
 
 const Index = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,7 +46,6 @@ const Index = () => {
   const featuresRef = useRef<HTMLDivElement>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
   const aboutRef = useRef<HTMLDivElement>(null);
-  const teamRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
@@ -55,7 +55,6 @@ const Index = () => {
   const isFeaturesInView = useInView(featuresRef, { once: true, margin: "-100px" });
   const isGalleryInView = useInView(galleryRef, { once: true, margin: "-100px" });
   const isAboutInView = useInView(aboutRef, { once: true, margin: "-100px" });
-  const isTeamInView = useInView(teamRef, { once: true, margin: "-100px" });
   const isContactInView = useInView(contactRef, { once: true, margin: "-100px" });
 
   // Add theme context
@@ -79,18 +78,16 @@ const Index = () => {
       const sections = [
         { ref: homeRef, id: 'home' },
         { ref: featuresRef, id: 'features' },
-        { ref: galleryRef, id: 'gallery' },
-        { ref: aboutRef, id: 'about us' },
-        { ref: teamRef, id: 'our team' },
-        { ref: contactRef, id: 'contact us' }
+        { ref: galleryRef, id: 'capabilities' },
+        { ref: aboutRef, id: 'about' },
+        { ref: contactRef, id: 'contact' }
       ];
 
-      // Find the current section
       for (let i = sections.length - 1; i >= 0; i--) {
         const section = sections[i];
         if (section.ref.current) {
           const { top } = section.ref.current.getBoundingClientRect();
-          if (top <= 100) {
+          if (top <= 120) {
             setActiveSection(section.id);
             break;
           }
@@ -99,8 +96,6 @@ const Index = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
-
-    // Initial animation setup
     handleScroll();
 
     return () => {
@@ -119,144 +114,177 @@ const Index = () => {
     navigate('/login');
   };
 
+  // Enterprise Stats Strip
+  const stats = [
+    {
+      value: '10,000+',
+      label: 'AI Interviews Evaluated',
+      subtext: 'Across tech stacks',
+      icon: <Bot className="w-4 h-4 text-cyan-400" />,
+      color: 'from-cyan-500/10 to-blue-500/10 border-cyan-500/20'
+    },
+    {
+      value: '75%',
+      label: 'Reduced Time-to-Hire',
+      subtext: 'From weeks to hours',
+      icon: <Zap className="w-4 h-4 text-amber-400" />,
+      color: 'from-amber-500/10 to-orange-500/10 border-amber-500/20'
+    },
+    {
+      value: '99.4%',
+      label: 'Proctoring Integrity Score',
+      subtext: 'Automated telemetry',
+      icon: <Shield className="w-4 h-4 text-emerald-400" />,
+      color: 'from-emerald-500/10 to-teal-500/10 border-emerald-500/20'
+    },
+    {
+      value: '<400ms',
+      label: 'Voice Response Latency',
+      subtext: 'Natural conversations',
+      icon: <Activity className="w-4 h-4 text-indigo-400" />,
+      color: 'from-indigo-500/10 to-violet-500/10 border-indigo-500/20'
+    }
+  ];
+
+  // Upgraded Features with distinct gradient accents
   const features = [
     {
-      icon: <Brain size={24} />,
+      icon: <Brain size={24} className="text-violet-400" />,
+      tag: 'Neural NLP',
       title: 'AI-Powered Screening',
-      description: 'Our advanced machine learning algorithms analyze resumes to find the best candidates based on your requirements.'
+      description: 'Advanced machine learning models analyze complex technical resumes, extracting verified competencies beyond keyword matching.',
+      glow: 'from-violet-500/20 to-indigo-500/20',
+      border: 'border-violet-500/30'
     },
     {
-      icon: <BarChart3 size={24} />,
-      title: 'Analytics Dashboard',
-      description: 'Get comprehensive insights about your candidate pool with visualization tools and reporting.'
+      icon: <Bot size={24} className="text-cyan-400" />,
+      tag: 'Conversational Voice',
+      title: 'Autonomous Technical Interviews',
+      description: 'Dynamic conversational AI agents conduct in-depth audio screenings, adapting follow-up questions to the candidate in real-time.',
+      glow: 'from-cyan-500/20 to-blue-500/20',
+      border: 'border-cyan-500/30'
     },
     {
-      icon: <Search size={24} />,
-      title: 'Intelligent Search',
-      description: 'Quickly locate candidates with specific skills, experience, or qualifications through semantic search.'
+      icon: <Shield size={24} className="text-emerald-400" />,
+      tag: 'Biometric Telemetry',
+      title: 'Real-Time Proctoring Shield',
+      description: 'Continuous computer-vision eye tracking, tab switch monitoring, and audio anomaly detection guarantee 100% exam integrity.',
+      glow: 'from-emerald-500/20 to-teal-500/20',
+      border: 'border-emerald-500/30'
     },
     {
-      icon: <ClipboardCheck size={24} />,
-      title: 'Automated Shortlisting',
-      description: 'Automatically rank candidates based on job descriptions and custom criteria to streamline your hiring.'
+      icon: <BarChart3 size={24} className="text-amber-400" />,
+      tag: 'Predictive Dossier',
+      title: 'Executive Analytics Dossier',
+      description: 'Generates comprehensive multi-dimensional candidate scorecards with timestamped recordings, code benchmarks, and hiring recommendations.',
+      glow: 'from-amber-500/20 to-orange-500/20',
+      border: 'border-amber-500/30'
     },
     {
-      icon: <Clock size={24} />,
-      title: 'Time-Saving Automation',
-      description: 'Reduce manual screening time by up to 75% with our intelligent processing system.'
+      icon: <Search size={24} className="text-sky-400" />,
+      tag: 'Vector Embeddings',
+      title: 'Intelligent Semantic Search',
+      description: 'Instantly query your candidate database using natural language to uncover specialized skillsets, architectures, or credentials.',
+      glow: 'from-sky-500/20 to-blue-500/20',
+      border: 'border-sky-500/30'
     },
     {
-      icon: <Shield size={24} />,
-      title: 'Bias Reduction',
-      description: 'Our system is designed to minimize unconscious bias in the hiring process for more diverse teams.'
+      icon: <ClipboardCheck size={24} className="text-rose-400" />,
+      tag: 'Fairness Engine',
+      title: 'Objective Bias Elimination',
+      description: 'Standardized evaluation rubrics and blind scoring benchmarks eliminate unconscious human bias to ensure meritocratic hiring.',
+      glow: 'from-rose-500/20 to-pink-500/20',
+      border: 'border-rose-500/30'
     }
   ];
 
-  const teamMembers = [
+  // Upgraded Platform Capabilities
+  const capabilities = [
     {
-      name: 'Swarup Kakade',
-      role: 'ML Engineer',
-      image: '/swarup.jpeg',
-      social: {
-        linkedin: "https://www.linkedin.com/in/aditya-verma-89070724a/",
-        twitter: '#',
-        github: 'https://github.com/aditya995666'
-      }
+      src: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=900&q=80',
+      tag: 'Voice & Coding Engine',
+      title: 'Autonomous Technical Deep-Dives',
+      description: 'Full-duplex voice synthesis and real-time code execution environment evaluating architecture, algorithms, and practical debugging.',
+      badge: 'Real-Time WebRTC'
     },
     {
-      name: 'Pratik Avhad',
-      role: 'Frontend Develpor',
-      image: '/pratik.jpeg',
-      social: {
-        linkedin: '#',
-        twitter: '#',
-        github: '#'
-      }
+      src: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=900&q=80',
+      tag: 'Computer Vision',
+      title: 'Continuous Multimodal Proctoring',
+      description: 'Automated gaze verification, multi-face presence detection, and browser lockdown telemetry logged with second-by-second timestamps.',
+      badge: 'Zero False Flags'
     },
     {
-      name: 'Aditya Verma',
-      role: 'Full Stack & AI Engineer',
-      image: '/ai-avatar.jpg',
-      social: {
-        linkedin: '#',
-        twitter: '#',
-        github: '#'
-      }
+      src: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80',
+      tag: 'Deep Intelligence',
+      title: 'Executive Hiring Dossier & Scorecards',
+      description: 'Detailed candidate reports featuring competency matrices, code quality ratings, communication index, and clear hiring verdicts.',
+      badge: 'Actionable Insights'
     },
     {
-      name: 'Nitish Jha',
-      role: 'Full Stack Developer',
-      image: '/nitish.jpeg',
-      social: {
-        linkedin: '#',
-        twitter: '#',
-        github: '#'
-      }
-    }
-  ];
-
-  const galleryImages = [
-    {
-      src: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-      alt: 'Dashboard overview with candidate analytics',
-      caption: 'Interactive Dashboard'
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-      alt: 'AI analysis of resume content',
-      caption: 'AI Resume Processing'
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-      alt: 'Team using the platform collaboratively',
-      caption: 'Collaborative Hiring'
-    },
-    {
-      src: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-      alt: 'Code view of the AI algorithm',
-      caption: 'Advanced Algorithms'
+      src: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=900&q=80',
+      tag: 'Vector Engine',
+      title: 'Semantic Skill & Portfolio Matching',
+      description: 'Transforms unstructured resumes and GitHub repositories into high-dimensional vector spaces for instant, accurate matching.',
+      badge: 'Groq + LLaMA-3'
     }
   ];
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark'
-      ? 'from-slate-950 via-slate-900 to-slate-950'
-      : 'from-slate-50 via-white to-slate-100'
+    <div className={`min-h-screen relative font-sans overflow-x-hidden ${theme === 'dark'
+      ? 'bg-[#070913] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200'
+      : 'bg-slate-50 text-slate-900 selection:bg-cyan-500/20'
       }`}>
-      {/* Navigation */}
+      {/* Background High-Tech Mesh Lights */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[550px] bg-gradient-to-b from-indigo-600/15 via-cyan-500/10 to-transparent blur-[140px] rounded-full" />
+        <div className="absolute top-[40%] right-[-5%] w-[600px] h-[400px] bg-blue-600/10 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[10%] left-[-5%] w-[600px] h-[400px] bg-violet-600/10 blur-[150px] rounded-full" />
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-70" />
+      </div>
+
+      {/* Navigation Bar */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrollY > 50
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrollY > 30
           ? theme === 'dark'
-            ? 'bg-slate-950/80 backdrop-blur-md shadow-lg border-b border-slate-800'
-            : 'bg-white/80 backdrop-blur-md shadow-lg border-b border-slate-200'
+            ? 'bg-[#070913]/85 backdrop-blur-2xl shadow-xl shadow-black/40 border-b border-white/[0.08]'
+            : 'bg-white/90 backdrop-blur-2xl shadow-lg border-b border-slate-200/80'
           : 'bg-transparent'
           }`}
       >
-        <div className="container mx-auto px-4 flex items-center justify-between h-20">
-          <div className="flex items-center">
-            <span className="font-bold text-3xl bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-              ResumeAI
-            </span>
+        <div className="container mx-auto px-4 sm:px-6 flex items-center justify-between h-20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-400 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/30 ring-1 ring-white/20">
+              VS
+            </div>
+            <div className="flex flex-col">
+              <span className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                VIAMOD SOLUTION
+              </span>
+              <span className="text-[10px] text-cyan-400/90 font-bold tracking-widest uppercase -mt-0.5">
+                PRIVATE LIMITED
+              </span>
+            </div>
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <ul className="flex space-x-8">
+            <ul className="flex space-x-7">
               {[
-                { name: 'Home', ref: homeRef },
-                { name: 'Features', ref: featuresRef },
-                { name: 'Gallery', ref: galleryRef },
-                { name: 'About Us', ref: aboutRef },
-                { name: 'Our Team', ref: teamRef },
-                { name: 'Contact Us', ref: contactRef }
+                { name: 'Home', ref: homeRef, id: 'home' },
+                { name: 'Features', ref: featuresRef, id: 'features' },
+                { name: 'Capabilities', ref: galleryRef, id: 'capabilities' },
+                { name: 'About Us', ref: aboutRef, id: 'about' },
+                { name: 'Contact Us', ref: contactRef, id: 'contact' }
               ].map((item) => (
                 <li key={item.name}>
                   <button
                     onClick={() => scrollToSection(item.ref)}
-                    className={`text-sm font-medium transition-colors hover:text-cyan-400 ${activeSection === item.name.toLowerCase().replace(' ', '')
-                      ? 'text-cyan-400'
+                    className={`text-sm font-medium transition-all hover:text-cyan-400 cursor-pointer ${activeSection === item.id
+                      ? 'text-cyan-400 font-semibold'
                       : theme === 'dark'
-                        ? 'text-slate-300'
+                        ? 'text-slate-300/90'
                         : 'text-slate-600'
                       }`}
                   >
@@ -265,86 +293,76 @@ const Index = () => {
                 </li>
               ))}
             </ul>
-            <div className="flex items-center space-x-4">
+
+            <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                className={`${theme === 'dark'
-                  ? 'text-slate-300 hover:text-cyan-400'
-                  : 'text-slate-600 hover:text-cyan-600'
+                className={`rounded-xl ${theme === 'dark'
+                  ? 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800/60'
+                  : 'text-slate-600 hover:text-cyan-600 hover:bg-slate-100'
                   }`}
               >
-                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </Button>
               <Button
-                variant="outline"
-                className={`${theme === 'dark'
-                  ? 'border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-950'
-                  : 'border-cyan-600 text-cyan-600 hover:bg-cyan-600 hover:text-white'
-                  }`}
+                className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold px-5 py-2 rounded-xl text-sm shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all hover:scale-[1.02] cursor-pointer"
                 onClick={handleGetStarted}
               >
-                Login
+                Login / Portal
               </Button>
             </div>
           </nav>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center space-x-4 md:hidden">
+          <div className="flex items-center space-x-3 md:hidden">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className={`${theme === 'dark'
-                ? 'text-slate-300 hover:text-cyan-400'
-                : 'text-slate-600 hover:text-cyan-600'
-                }`}
+              className={`rounded-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}
             >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className={`${theme === 'dark'
-                ? 'text-slate-300 hover:text-cyan-400'
-                : 'text-slate-600 hover:text-cyan-600'
-                }`}
+              className={`rounded-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </Button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation Dropdown */}
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -15 }}
             className={`md:hidden ${theme === 'dark'
-              ? 'bg-slate-950/95 backdrop-blur-md shadow-lg border-b border-slate-800'
-              : 'bg-white/95 backdrop-blur-md shadow-lg border-b border-slate-200'
+              ? 'bg-[#070913]/95 backdrop-blur-2xl border-b border-white/[0.08]'
+              : 'bg-white/95 backdrop-blur-2xl border-b border-slate-200'
               }`}
           >
             <ScrollArea className="h-[calc(100vh-5rem)]">
-              <div className="px-4 py-6 space-y-4">
-                <ul className="space-y-4">
+              <div className="px-5 py-6 space-y-4">
+                <ul className="space-y-3">
                   {[
                     { name: 'Home', ref: homeRef },
                     { name: 'Features', ref: featuresRef },
-                    { name: 'Gallery', ref: galleryRef },
+                    { name: 'Capabilities', ref: galleryRef },
                     { name: 'About Us', ref: aboutRef },
-                    { name: 'Our Team', ref: teamRef },
                     { name: 'Contact Us', ref: contactRef }
                   ].map((item) => (
                     <li key={item.name}>
                       <button
                         onClick={() => scrollToSection(item.ref)}
-                        className={`block w-full text-left px-4 py-2 rounded-md transition-colors ${theme === 'dark'
-                          ? 'text-slate-300 hover:bg-slate-800 hover:text-cyan-400'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600'
+                        className={`block w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${theme === 'dark'
+                          ? 'text-slate-200 hover:bg-slate-800/80 hover:text-cyan-400'
+                          : 'text-slate-700 hover:bg-slate-100 hover:text-cyan-600'
                           }`}
                       >
                         {item.name}
@@ -353,14 +371,10 @@ const Index = () => {
                   ))}
                 </ul>
                 <Button
-                  variant="outline"
-                  className={`w-full ${theme === 'dark'
-                    ? 'border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-950'
-                    : 'border-cyan-600 text-cyan-600 hover:bg-cyan-600 hover:text-white'
-                    }`}
+                  className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white font-bold rounded-xl h-11 shadow-lg shadow-cyan-500/20"
                   onClick={handleGetStarted}
                 >
-                  Login
+                  Login / Portal
                 </Button>
               </div>
             </ScrollArea>
@@ -368,198 +382,280 @@ const Index = () => {
         )}
       </header>
 
-      <main>
+      <main className="relative z-10">
         {/* Hero Section */}
-        <section ref={homeRef} className="pt-40 pb-20 px-4">
-          <div className="container mx-auto flex flex-col md:flex-row items-center gap-16">
-            <motion.div
-              ref={homeRef}
-              initial={{ opacity: 0, y: 50 }}
-              animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="md:w-1/2 space-y-8"
-            >
-              <div className="space-y-6">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={isHeroInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                  <Badge variant="secondary" className="text-lg px-4 py-1 bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
-                    AI-Powered Resume Analysis
-                  </Badge>
-                </motion.div>
-                <motion.h1
-                  className={`text-6xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                    }`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  Streamline Your Hiring Process
-                </motion.h1>
-                <motion.p
-                  className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                    }`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                >
-                  Get instant insights and make data-driven decisions with our advanced resume screening technology.
-                </motion.p>
-              </div>
+        <section ref={homeRef} className="pt-36 sm:pt-44 pb-20 px-4 sm:px-6 relative">
+          <div className="container mx-auto">
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+              {/* Left Column: Hero Copy */}
               <motion.div
-                className="flex gap-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
+                initial={{ opacity: 0, y: 40 }}
+                animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+                className="lg:w-1/2 space-y-7 text-left"
               >
-                <Button
-                  onClick={handleGetStarted}
-                  size="lg"
-                  className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 text-slate-950 font-semibold"
-                >
-                  Get Started <ArrowRight className="ml-2" size={18} />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => scrollToSection(featuresRef)}
-                  className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-950"
-                >
-                  Learn More
-                </Button>
-              </motion.div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={isHeroInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="md:w-1/2"
-            >
-              <div className="flex items-center gap-4">
-                <h1 className="text-2xl text-white font-bold sans-serif gap m-auto mb-10">
-                  Get deep insights about your resume through chat !!
+                {/* Eyebrow Pill */}
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-violet-500/10 text-cyan-300 border border-cyan-500/30 backdrop-blur-md shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  <span>Viamod Autonomous AI Recruiter & Proctoring Platform</span>
+                </div>
+
+                {/* Main Headline */}
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.12]">
+                  Transform Technical Hiring With{' '}
+                  <span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-300 bg-clip-text text-transparent">
+                    Autonomous AI
+                  </span>
                 </h1>
 
-              </div>
+                {/* Subtitle */}
+                <p className="text-base sm:text-lg text-slate-300/90 leading-relaxed max-w-xl">
+                  Streamline engineering evaluations with conversational AI voice interviews, real-time proctoring telemetry, vector-based resume scoring, and instantaneous candidate dossiers.
+                </p>
 
+                {/* CTAs */}
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <Button
+                    onClick={handleGetStarted}
+                    size="lg"
+                    className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold h-12 px-7 rounded-xl shadow-xl shadow-cyan-500/25 transition-all hover:scale-[1.02] cursor-pointer"
+                  >
+                    <span>Get Started</span>
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => scrollToSection(featuresRef)}
+                    className="border-white/15 bg-white/[0.03] hover:bg-white/[0.08] hover:border-cyan-400/50 text-slate-200 hover:text-white h-12 px-6 rounded-xl backdrop-blur-md transition-all cursor-pointer"
+                  >
+                    Explore Features
+                  </Button>
+                </div>
 
-              <Card className="overflow-hidden border-0 bg-slate-1100/50 backdrop-blur-sm shadow-2xl">
-                <CardContent className="p-0">
+                {/* Trust Badges Strip */}
+                <div className="pt-2 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Real-Time WebRTC Voice</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                    <span>Continuous Eye Tracking</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-indigo-400" />
+                    <span>Groq LLaMA-3 Accelerated</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Right Column: Interactive AI Agent Simulator */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                animate={isHeroInView ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.95, y: 30 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                className="lg:w-1/2 w-full max-w-lg mx-auto relative"
+              >
+                {/* Subtle back card glow */}
+                <div className="absolute -inset-1.5 bg-gradient-to-r from-cyan-500/25 via-blue-600/25 to-indigo-600/25 rounded-3xl blur-2xl opacity-70 pointer-events-none" />
+
+                {/* Status Header Chip */}
+                <div className="relative mb-3 flex items-center justify-between px-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                    <span className="text-slate-300 font-medium">Recruiter AI Agent</span>
+                  </div>
+                  <span className="font-mono text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-full">
+                    Latency: 320ms • Active
+                  </span>
+                </div>
+
+                {/* Chatbot Component */}
+                <div className="relative">
                   <Chatbot
                     messages={[
-                      "Hello! I'm your AI HR assistant. How can I help you today? 👋",
-                      "I'd like to know more about your resume analysis features.",
-                      "We offer comprehensive resume analysis, Q&A about resumes, and interview question generation. What interests you most? 📝",
-                      "Tell me more about the resume analysis feature.",
-                      "Our AI-powered resume analysis provides detailed insights about candidate skills, experience, and match with job requirements. Would you like to try it out? 🚀"
+                      "Hello! I'm your Viamod AI Recruiter & Technical Screening Agent. How can I assist you today? 👋",
+                      "I'd like to analyze this full-stack developer resume and launch a proctored technical interview.",
+                      "Processing resume... Found 6+ years React/Node.js experience, 94% role match! Ready to begin the adaptive evaluation? 📝",
+                      "Yes, initialize proctoring and start the session.",
+                      "Proctoring telemetry active (eye tracking, voice audio, IDE sync). Launching candidate session now. 🚀"
                     ]}
-                    delay={1500}
-                    startDelay={1000}
-                    restartDelay={5000}
+                    delay={1600}
+                    startDelay={900}
+                    restartDelay={4500}
                   />
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-          <motion.div
-            className="container mx-auto mt-20 text-center"
-            initial={{ opacity: 0 }}
-            animate={isHeroInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-          >
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Enterprise Metrics Bar */}
             <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6"
             >
-              <ChevronDown size={30} className="text-cyan-400 mx-auto" />
+              {stats.map((stat, idx) => (
+                <div
+                  key={idx}
+                  className={`p-5 rounded-2xl bg-slate-900/60 border ${stat.color} backdrop-blur-xl shadow-lg flex flex-col justify-between hover:bg-slate-900/80 transition-all`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                      {stat.value}
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center">
+                      {stat.icon}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-semibold text-slate-200">
+                      {stat.label}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {stat.subtext}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </motion.div>
-          </motion.div>
+
+            {/* Scroll Indicator */}
+            <div className="mt-14 text-center">
+              <button
+                onClick={() => scrollToSection(featuresRef)}
+                aria-label="Scroll down to features"
+                className="inline-flex flex-col items-center gap-1 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+              >
+                <span className="text-[11px] font-medium tracking-widest uppercase">Explore Capabilities</span>
+                <motion.div
+                  animate={{ y: [0, 6, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <ChevronDown size={20} />
+                </motion.div>
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* Features Section */}
-        <section ref={featuresRef} className="py-20 px-4 bg-slate-900/50 relative z-10">
+        <section ref={featuresRef} className="py-24 px-4 sm:px-6 relative bg-slate-950/60 border-t border-white/[0.06]">
           <div className="container mx-auto">
             <motion.div
-              className="text-center space-y-6 mb-16"
-              initial={{ opacity: 0, y: 30 }}
-              animate={isFeaturesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              className="text-center space-y-4 mb-16"
+              initial={{ opacity: 0, y: 25 }}
+              animate={isFeaturesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                }`}>Powerful Features</h2>
-              <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } max-w-2xl mx-auto`}>
-                Discover how our AI-powered platform can transform your recruitment process
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+                <Layers className="w-3.5 h-3.5" />
+                <span>CORE ENGINEERING MODULES</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Engineered for High-Scale Enterprise Hiring
+              </h2>
+              <p className="text-base sm:text-lg text-slate-300/90 max-w-2xl mx-auto">
+                Replace disconnected screening tools with an end-to-end autonomous evaluation architecture.
               </p>
             </motion.div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={isFeaturesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="relative z-10"
+                  initial={{ opacity: 0, y: 25 }}
+                  animate={isFeaturesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
+                  transition={{ duration: 0.5, delay: index * 0.08 }}
                 >
-                  <Card className="h-full hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800/70">
-                    <CardHeader>
-                      <div className="w-14 h-14 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mb-4">
-                        <div className="text-cyan-400">
+                  <div className="h-full p-7 rounded-2xl bg-slate-900/60 border border-white/[0.08] hover:border-cyan-500/40 backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 group flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-5">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.glow} border ${feature.border} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}>
                           {feature.icon}
                         </div>
+                        <span className="text-[11px] font-semibold text-slate-400 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1 rounded-full">
+                          {feature.tag}
+                        </span>
                       </div>
-                      <CardTitle className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                        }`}>{feature.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>
+                      <h3 className="text-lg sm:text-xl font-bold text-white mb-2.5 group-hover:text-cyan-300 transition-colors">
+                        {feature.title}
+                      </h3>
+                      <p className="text-slate-300/80 text-sm leading-relaxed">
                         {feature.description}
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+
+                    <div className="pt-5 mt-5 border-t border-white/[0.06] flex items-center gap-1.5 text-xs font-semibold text-cyan-400 group-hover:text-cyan-300">
+                      <span>Learn technical spec</span>
+                      <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Gallery Section */}
-        <section ref={galleryRef} className="py-16 px-4">
+        {/* Platform Capabilities / Gallery Section */}
+        <section ref={galleryRef} className="py-24 px-4 sm:px-6 relative border-t border-white/[0.06]">
           <div className="container mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isGalleryInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 25 }}
+              animate={isGalleryInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
               transition={{ duration: 0.6 }}
-              className="text-center space-y-6 mb-16"
+              className="text-center space-y-4 mb-16"
             >
-
-              <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                }`}>Our Platform in Action</h2>
-              <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } max-w-2xl mx-auto`}>
-                Explore how our AI-powered platform revolutionizes the recruitment process
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>PLATFORM TELEMETRY IN ACTION</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Precision Intelligence Across Every Stage
+              </h2>
+              <p className="text-base sm:text-lg text-slate-300/90 max-w-2xl mx-auto">
+                Explore how Viamod Solution automates resume parsing, live proctored coding, and candidate scoring.
               </p>
             </motion.div>
-            <div className="grid md:grid-cols-2 gap-8 mt-12">
-              {galleryImages.map((image, index) => (
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {capabilities.map((cap, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 30 }}
                   animate={isGalleryInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.5, delay: index * 0.2 }}
-                  className="rounded-xl overflow-hidden shadow-lg"
+                  transition={{ duration: 0.5, delay: index * 0.15 }}
+                  className="rounded-2xl overflow-hidden border border-white/[0.08] hover:border-cyan-500/40 bg-slate-900/60 backdrop-blur-xl shadow-xl transition-all duration-300 hover:-translate-y-1 group"
                 >
-                  <div className="relative">
+                  <div className="relative h-60 overflow-hidden">
                     <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-full h-64 object-cover transition-transform duration-500 hover:scale-105"
+                      src={cap.src}
+                      alt={cap.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-4">
-                      <p className="font-semibold">{image.caption}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                    <div className="absolute top-4 left-4">
+                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-950/80 border border-white/20 text-cyan-300 backdrop-blur-md">
+                        {cap.badge}
+                      </span>
                     </div>
+                    <div className="absolute bottom-3 left-4 right-4">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold">
+                        {cap.tag}
+                      </span>
+                      <h3 className="text-lg sm:text-xl font-bold text-white">
+                        {cap.title}
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-slate-300 text-sm leading-relaxed">
+                      {cap.description}
+                    </p>
                   </div>
                 </motion.div>
               ))}
@@ -568,58 +664,84 @@ const Index = () => {
         </section>
 
         {/* About Section */}
-        <section ref={aboutRef} className="py-16 px-4">
+        <section ref={aboutRef} className="py-24 px-4 sm:px-6 relative bg-slate-950/70 border-t border-white/[0.06]">
           <div className="container mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isAboutInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 25 }}
+              animate={isAboutInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
               transition={{ duration: 0.6 }}
-              className="text-center space-y-6 mb-16"
+              className="text-center space-y-4 mb-16"
             >
-
-              <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                }`}>Our Story</h2>
-              <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } max-w-2xl mx-auto`}>
-                Learn about our mission to transform recruitment through AI innovation
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-cyan-400/10 text-cyan-300 border border-cyan-400/30">
+                <Award className="w-3.5 h-3.5" />
+                <span>ENTERPRISE TALENT INTELLIGENCE</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Empowering Modern Engineering Teams
+              </h2>
+              <p className="text-base sm:text-lg text-slate-300/90 max-w-2xl mx-auto">
+                Learn how Viamod Solution Private Limited eliminates recruitment bottlenecks with autonomous AI infrastructure.
               </p>
             </motion.div>
-            <div className="flex flex-col md:flex-row items-center gap-12">
+
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
               <motion.div
-                className="md:w-1/2"
+                className="lg:w-1/2 w-full"
                 initial={{ opacity: 0, x: -30 }}
                 animate={isAboutInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <img
-                  src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&auto=format&fit=crop&w=700&q=80"
-                  alt="Our team working together"
-                  className="rounded-xl shadow-xl"
-                />
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 group">
+                  <img
+                    src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80"
+                    alt="Viamod Solution Engineering"
+                    className="w-full h-80 sm:h-96 object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                  <div className="absolute bottom-5 left-5 right-5 p-4 rounded-2xl bg-slate-900/90 border border-white/10 backdrop-blur-xl">
+                    <p className="text-xs font-semibold text-cyan-300 uppercase tracking-wider">Enterprise Mission</p>
+                    <p className="text-sm font-bold text-white mt-0.5">
+                      Viamod Solution Private Limited • Scaling global engineering assessments with 0% bias.
+                    </p>
+                  </div>
+                </div>
               </motion.div>
+
               <motion.div
-                className="md:w-1/2 space-y-6"
+                className="lg:w-1/2 space-y-6 text-left"
                 initial={{ opacity: 0, x: 30 }}
                 animate={isAboutInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                  }`}>Revolutionizing Recruitment with AI</h3>
-                <p className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>
-                  ResumeAI was founded with a simple mission: to make recruitment more efficient and effective through the power of artificial intelligence.
+                <div className="inline-block px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-white/[0.05] border border-white/10 text-slate-300">
+                  ABOUT THE PLATFORM
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
+                  Autonomous Recruiter & Proctored Evaluation Suite
+                </h3>
+                <p className="text-slate-300/90 leading-relaxed text-sm sm:text-base">
+                  <strong className="text-white font-semibold">Viamod Solution Private Limited</strong> was founded with a forward-looking vision: to make technical recruitment seamless, transparent, and accurate through autonomous AI intelligence.
                 </p>
-                <p className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>
-                  Our team of AI experts and HR professionals has developed a state-of-the-art resume screening system that analyzes applications more thoroughly than any human could, while eliminating unconscious bias.
+                <p className="text-slate-300/90 leading-relaxed text-sm sm:text-base">
+                  Our engineering suite integrates autonomous conversational interview bots, real-time proctoring telemetry, dynamic resume parsing, and predictive hiring analytics that eliminate unconscious bias and drastically cut hiring turnaround time.
                 </p>
-                <p className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>
-                  We're passionate about helping companies find the right talent quickly, while ensuring candidates are matched to roles where they'll truly excel.
+                <p className="text-slate-300/90 leading-relaxed text-sm sm:text-base">
+                  We empower organizations to scale their technical evaluations while providing candidates with a fair, adaptive, and immersive interviewing experience.
                 </p>
-                <div className="pt-4">
+
+                <div className="pt-2 flex flex-wrap items-center gap-4">
                   <Button
                     onClick={() => scrollToSection(contactRef)}
-                    className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 text-slate-950 font-semibold"
+                    className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-cyan-500/25 cursor-pointer"
                   >
-                    Get in Touch
+                    Contact Enterprise Sales
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleGetStarted}
+                    className="border-white/15 bg-white/[0.03] hover:bg-white/[0.08] text-slate-200 rounded-xl px-5 cursor-pointer"
+                  >
+                    Candidate Login
                   </Button>
                 </div>
               </motion.div>
@@ -627,199 +749,198 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Team Section */}
-        <section ref={teamRef} className="py-16 px-4">
-          <div className="container mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isTeamInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ duration: 0.6 }}
-              className="text-center space-y-6 mb-16"
-            >
-
-              <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                }`}>Meet the Experts</h2>
-              <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } max-w-2xl mx-auto`}>
-                Get to know the talented individuals behind ResumeAI
-              </p>
-            </motion.div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
-              {teamMembers.map((member, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={isTeamInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="team-card"
-                >
-                  <div className="relative overflow-hidden aspect-[4/5]">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-full h-full object-cover object-top transition-transform duration-500 hover:scale-110"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                      }`}>{member.name}</h3>
-                    <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                      } mb-4`}>{member.role}</p>
-                    <div className="flex space-x-4">
-                      <a href={member.social.linkedin} className={`text-slate-400 hover:text-cyan-400 transition-colors ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                        }`}>
-                        <Linkedin size={18} />
-                      </a>
-                      <a href={member.social.twitter} className={`text-slate-400 hover:text-cyan-400 transition-colors ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                        }`}>
-                        <Twitter size={18} />
-                      </a>
-                      <a href={member.social.github} className={`text-slate-400 hover:text-cyan-400 transition-colors ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                        }`}>
-                        <Github size={18} />
-                      </a>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Contact Section */}
-        <section ref={contactRef} className="py-16 px-4">
+        <section ref={contactRef} className="py-24 px-4 sm:px-6 relative border-t border-white/[0.06]">
           <div className="container mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isContactInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 25 }}
+              animate={isContactInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
               transition={{ duration: 0.6 }}
-              className="text-center space-y-6 mb-16"
+              className="text-center space-y-4 mb-16"
             >
-
-              <h2 className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                }`}>Get in Touch</h2>
-              <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } max-w-2xl mx-auto`}>
-                Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-cyan-400/10 text-cyan-300 border border-cyan-400/30">
+                <Mail className="w-3.5 h-3.5" />
+                <span>SUPPORT & ENTERPRISE INQUIRIES</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Get in Touch With Us
+              </h2>
+              <p className="text-base sm:text-lg text-slate-300/90 max-w-2xl mx-auto">
+                Have questions or need enterprise platform deployment? Reach out directly to our team.
               </p>
             </motion.div>
-            <div className="flex flex-col md:flex-row gap-12 mt-12">
+
+            <div className="flex flex-col lg:flex-row gap-10 items-stretch">
+              {/* Contact Form */}
               <motion.div
-                className="md:w-1/2"
-                initial={{ opacity: 0, x: -30 }}
-                animate={isContactInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+                className="lg:w-1/2 p-8 sm:p-9 rounded-3xl bg-slate-900/70 border border-white/[0.08] backdrop-blur-2xl shadow-xl flex flex-col justify-between"
+                initial={{ opacity: 0, x: -25 }}
+                animate={isContactInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -25 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <form className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="name" className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                        } mb-1`}>Name</label>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-1">Send a Direct Inquiry</h3>
+                  <p className="text-xs text-slate-400 mb-6">Our enterprise solutions engineers typically respond in &lt;2 hours.</p>
+
+                  <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Thank you! Your message has been sent to info.supportmod@gmail.com.'); }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label htmlFor="name" className="block text-xs font-semibold text-slate-300">Name</label>
+                        <input
+                          type="text"
+                          id="name"
+                          className="w-full px-4 py-3 bg-slate-950/80 border border-white/10 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+                          placeholder="Your full name"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label htmlFor="email" className="block text-xs font-semibold text-slate-300">Email Address</label>
+                        <input
+                          type="email"
+                          id="email"
+                          className="w-full px-4 py-3 bg-slate-950/80 border border-white/10 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+                          placeholder="you@company.com"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label htmlFor="subject" className="block text-xs font-semibold text-slate-300">Subject</label>
                       <input
                         type="text"
-                        id="name"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                        placeholder="Your name"
+                        id="subject"
+                        className="w-full px-4 py-3 bg-slate-950/80 border border-white/10 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+                        placeholder="Platform inquiry, custom integration, or sales"
+                        required
                       />
                     </div>
-                    <div>
-                      <label htmlFor="email" className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                        } mb-1`}>Email</label>
-                      <input
-                        type="email"
-                        id="email"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                        placeholder="your.email@example.com"
+
+                    <div className="space-y-1.5">
+                      <label htmlFor="message" className="block text-xs font-semibold text-slate-300">Message</label>
+                      <textarea
+                        id="message"
+                        rows={4}
+                        className="w-full px-4 py-3 bg-slate-950/80 border border-white/10 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+                        placeholder="Provide details about your organization or candidate volume..."
+                        required
                       />
                     </div>
-                  </div>
-                  <div>
-                    <label htmlFor="subject" className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                      } mb-1`}>Subject</label>
-                    <input
-                      type="text"
-                      id="subject"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                      placeholder="How can we help you?"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="message" className={`block text-sm font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                      } mb-1`}>Message</label>
-                    <textarea
-                      id="message"
-                      rows={4}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                      placeholder="Your message here..."
-                    ></textarea>
-                  </div>
-                  <div>
-                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+
+                    <Button
+                      type="submit"
+                      className="w-full h-12 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/25 transition-all cursor-pointer"
+                    >
                       Send Message
                     </Button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               </motion.div>
 
+              {/* Corporate Information Card */}
               <motion.div
-                className="md:w-1/2 bg-slate-800/50 p-8 rounded-xl shadow-md backdrop-blur-sm"
-                initial={{ opacity: 0, x: 30 }}
-                animate={isContactInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
+                className="lg:w-1/2 p-8 sm:p-9 rounded-3xl bg-slate-900/70 border border-white/[0.08] backdrop-blur-2xl shadow-xl flex flex-col justify-between space-y-6"
+                initial={{ opacity: 0, x: 25 }}
+                animate={isContactInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 25 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'
-                  } mb-6`}>Contact Information</h3>
-                <div className="space-y-6">
-                  <div className="flex items-start">
-                    <Mail className={`mr-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'
-                      }`} size={24} />
-                    <div>
-                      <p className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                        }`}>Email</p>
-                      <p className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>
-                        adityaverma1285515@gmail.com
-                      </p>
+                <div>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white text-xs font-black">
+                      VS
+                    </div>
+                    <h3 className="text-xl font-bold text-white">
+                      Viamod Solution Private Limited
+                    </h3>
+                  </div>
+                  <p className="text-slate-400 text-xs mb-6">Corporate Office & Customer Support Desk</p>
+
+                  <div className="space-y-4">
+                    {/* Support Email */}
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-950/70 border border-white/[0.06] hover:border-cyan-500/30 transition-all">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+                        <Mail size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Official Support Email</p>
+                        <a
+                          href="mailto:info.supportmod@gmail.com"
+                          className="text-sm sm:text-base font-bold text-cyan-300 hover:text-cyan-200 hover:underline transition-colors"
+                        >
+                          info.supportmod@gmail.com
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Direct Hotline */}
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-950/70 border border-white/[0.06] hover:border-blue-500/30 transition-all">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+                        <Phone size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Direct Hotline</p>
+                        <p className="text-sm sm:text-base font-bold text-white">
+                          +91 9956665489
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-950/70 border border-white/[0.06] hover:border-purple-500/30 transition-all">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+                        <MapPin size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Headquarters</p>
+                        <p className="text-sm font-medium text-slate-300 leading-relaxed">
+                          Lucknow, Uttar Pradesh, India
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-start">
-                    <Phone className={`mr-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'
-                      }`} size={24} />
+                </div>
+
+                <div className="pt-4 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                        }`}>Phone</p>
-                      <p className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>
-                        +91 9956665489
-                      </p>
+                      <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Connect With Us</h4>
+                      <div className="flex space-x-3">
+                        <a
+                          href="https://linkedin.com"
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label="LinkedIn"
+                          className="w-9 h-9 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 transition-all"
+                        >
+                          <Linkedin size={16} />
+                        </a>
+                        <a
+                          href="https://twitter.com"
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label="Twitter"
+                          className="w-9 h-9 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 transition-all"
+                        >
+                          <Twitter size={16} />
+                        </a>
+                        <a
+                          href="https://github.com"
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label="GitHub"
+                          className="w-9 h-9 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 transition-all"
+                        >
+                          <Github size={16} />
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-start">
-                    <MapPin className={`mr-4 ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'
-                      }`} size={24} />
-                    <div>
-                      <p className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
-                        }`}>Address</p>
-                      <p className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>
-                        Lucknow<br />
-                        Barabanki, Uttar Pradesh<br />
-                        India
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-4">
-                    <h4 className="font-medium mb-3">Follow Us</h4>
-                    <div className="flex space-x-4">
-                      <a href="#" className={`bg-white p-2 rounded-full text-primary hover:bg-primary hover:text-white transition-colors ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                        }`}>
-                        <Twitter size={20} />
-                      </a>
-                      <a href="#" className={`bg-white p-2 rounded-full text-primary hover:bg-primary hover:text-white transition-colors ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                        }`}>
-                        <Linkedin size={20} />
-                      </a>
-                      <a href="#" className={`bg-white p-2 rounded-full text-primary hover:bg-primary hover:text-white transition-colors ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                        }`}>
-                        <Github size={20} />
-                      </a>
+
+                    <div className="text-right">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        SLA: 2 Hours
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -827,41 +948,56 @@ const Index = () => {
             </div>
           </div>
         </section>
-
-
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-950 border-t border-slate-800">
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
-              <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                }`}>ResumeAI</h2>
-              <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } mt-2`}>Revolutionizing recruitment through AI</p>
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-8">
-              {['Home', 'Features', 'Gallery', 'About', 'Team', 'Contact'].map((item) => (
-                <a
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
-                  className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                    } hover:text-cyan-400 transition-colors`}
-                >
-                  {item}
+      <footer className="bg-slate-950/95 border-t border-white/[0.08] relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 py-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-400 flex items-center justify-center text-white font-black text-xs shadow-md shadow-indigo-500/20">
+                  VS
+                </div>
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                  VIAMOD SOLUTION PRIVATE LIMITED
+                </h2>
+              </div>
+              <p className="text-slate-400 text-xs sm:text-sm mt-2">
+                Autonomous Recruiter & Talent Assessment Suite • Support:{' '}
+                <a href="mailto:info.supportmod@gmail.com" className="text-cyan-400 hover:underline">
+                  info.supportmod@gmail.com
                 </a>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 text-xs sm:text-sm">
+              {[
+                { name: 'Home', ref: homeRef },
+                { name: 'Features', ref: featuresRef },
+                { name: 'Capabilities', ref: galleryRef },
+                { name: 'About Us', ref: aboutRef },
+                { name: 'Contact Us', ref: contactRef }
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => scrollToSection(item.ref)}
+                  className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+                >
+                  {item.name}
+                </button>
               ))}
             </div>
           </div>
-          <Separator className="my-8 bg-slate-800" />
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-slate-400 text-sm">© 2023 ResumeAI. All rights reserved.</p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } hover:text-cyan-400 transition-colors`}>Privacy Policy</a>
-              <a href="#" className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                } hover:text-cyan-400 transition-colors`}>Terms of Service</a>
+
+          <Separator className="my-8 bg-white/[0.08]" />
+
+          <div className="flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+            <p>© 2025 Viamod Solution Private Limited. All rights reserved.</p>
+            <div className="flex space-x-6">
+              <a href="#" className="hover:text-cyan-400 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-cyan-400 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-cyan-400 transition-colors">Security & Compliance</a>
             </div>
           </div>
         </div>

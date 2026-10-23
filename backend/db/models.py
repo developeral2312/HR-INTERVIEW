@@ -4,7 +4,7 @@ MongoDB Database Models/Schemas
 Purpose: Define structure for all collections in the database
 Features:
 - Schema validation
-- Default values
+- Default valuess
 - Timestamp management
 - Data type definitions
 """

@@ -1,7 +1,7 @@
 """
 Analysis Service - Resume analysis business logic
 
-Placeholder for future analysis-related business logic
+Placeholder for future analysis-related business logic.
 """
 
 from repositories.analysis_repository import AnalysisRepository

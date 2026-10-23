@@ -82,7 +82,7 @@ def create_indexes():
     resumes.create_index([("uploaded_at", DESCENDING)], name="uploaded_at_idx")
     resumes.create_index([("uploaded_by", ASCENDING)], name="uploaded_by_idx")
     resumes.create_index([("structured_data.skills", ASCENDING)], name="skills_idx")
-    logger.info("   ✅ Created 4 indexes")
+    logger.info("   ✅ Created 4 indexes")#
     
     # Job Descriptions collection indexes
     logger.info(f"\n📁 Creating indexes for '{Collections.JOB_DESCRIPTIONS}'...")

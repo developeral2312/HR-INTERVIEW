@@ -7,7 +7,7 @@ Why LangGraph:
 - Step 2: Understand question type
 - Step 3: Retrieve relevant resume sections
 - Step 4: Generate precise answer
-- Maintains conversation history for follow-up questions
+- Maintains conversation history for follow-up questions.
 
 Traditional: Single prompt with full resume each time (slow, expensive)
 LangGraph: Stateful context + intelligent retrieval (fast, efficient)

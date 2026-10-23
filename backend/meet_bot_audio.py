@@ -7,7 +7,7 @@ Features:
 1. Inject TTS audio into Meet's audio system
 2. Capture candidate audio for STT processing
 3. Handle audio timing and synchronization
-4. Manage microphone/speaker permissions
+4. Manage microphone/speaker permissions.
 """
 
 import asyncio

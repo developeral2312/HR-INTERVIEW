@@ -5,7 +5,7 @@ Handles MongoDB operations for Google Meet recording sessions:
 - Store session metadata and state
 - Save transcription segments
 - Track session analytics
-- Manage session lifecycle
+- Manage session lifecycle.
 """
 
 import logging

@@ -2,7 +2,7 @@
 """
 MongoDB Setup Script for Resumate
 
-This script will:
+This script will:.
 1. Install required Python packages
 2. Test MongoDB connection
 3. Create all collections

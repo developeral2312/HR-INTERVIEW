@@ -15,6 +15,8 @@ interface Analysis {
   areas_for_improvement?: string[];
 }
 
+
+
 interface ResumeQAProps {
   resumeFile: File | null;
   resumeText: string;

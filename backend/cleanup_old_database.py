@@ -8,7 +8,7 @@ This script will:
 3. Show collections and document counts
 4. DELETE the entire ai_recruiter_db database
 5. Verify only 'resumate' remains
-
+.
 ⚠️  WARNING: This will permanently delete ai_recruiter_db!
 """
 

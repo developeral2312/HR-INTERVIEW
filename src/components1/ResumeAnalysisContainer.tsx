@@ -12,6 +12,7 @@ import InterviewAnalytics from './InterviewAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { Upload } from 'lucide-react';
 
+
 interface AnalysisResult {
   match_score: number;
   matching_skills: string[];

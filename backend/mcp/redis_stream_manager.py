@@ -1,7 +1,7 @@
 """
 Redis Stream Manager for Distributed Orchestration
 Handles session-specific message queues for horizontal scaling
-Enables multiple FastAPI workers to handle concurrent interviews
+Enables multiple FastAPI workers to handle concurrent interviews.
 """
 
 import json

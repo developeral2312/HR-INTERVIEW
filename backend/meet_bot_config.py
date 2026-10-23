@@ -5,7 +5,7 @@ Centralized configuration for Google Meet bot settings, credentials,
 and environment variables.
 
 Author: AI Recruiter Team
-Created: February 2026
+Created: February 2026.
 """
 
 import os

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Bot, Sparkles, Send, ArrowRight } from 'lucide-react';
 
 interface Message {
   text: string;
@@ -18,15 +19,15 @@ interface ChatbotProps {
 
 export default function Chatbot({
   messages = [
-    "नमस्कार! क्या आप स्मार्ट कृषि के बारे में अधिक जानना चाहेंगे?🌱",  
-"हाँ, मुझे आपके समाधानों के बारे में जानना है।",  
-"हम IoT सेंसर, AI विश्लेषण और सतत कृषि पद्धतियों के साथ डेटा-चालित खेती समाधान प्रदान करते हैं।🌱",  
-"यह तो बहुत रोचक है! मैं इसे कैसे शुरू कर सकता हूँ?",  
-"मैं आपको हमारी टीम से जोड़ रहा हूँ !🌱"
+    "Hello! I'm your Viamod AI Recruiter & Talent Assistant. How can I assist you today? 👋",
+    "I'd like to analyze this full-stack candidate's resume and generate interview questions.",
+    "Analyzing resume... Found 6+ years React/Node.js experience, 94% job match score! Would you like me to start the proctored technical interview session? ⚡",
+    "Yes, generate 5 technical questions and begin proctoring.",
+    "Ready! Proctoring telemetry engaged (voice audio, gaze tracking, IDE sync). Launching candidate session now. 🚀"
   ],
-  delay = 1000, // Slower display time
-  startDelay = 1000, // First message delay
-  restartDelay = 3000, // Delay before restart
+  delay = 1400,
+  startDelay = 800,
+  restartDelay = 4000,
   loop = true
 }: ChatbotProps) {
   const navigate = useNavigate();
@@ -38,17 +39,17 @@ export default function Chatbot({
   useEffect(() => {
     if (currentIndex >= messages.length) {
       if (loop) {
-        setTimeout(() => {
+        const resetTimer = setTimeout(() => {
           setChatMessages([]);
           setCurrentIndex(0);
         }, restartDelay);
+        return () => clearTimeout(resetTimer);
       }
       return;
     }
 
     const isNextMessageFromUser = currentIndex % 2 !== 0;
-    
-    // Show appropriate typing indicator
+
     if (isNextMessageFromUser) {
       setIsUserTyping(true);
       setIsTyping(false);
@@ -76,33 +77,50 @@ export default function Chatbot({
   }, [currentIndex, messages, delay, startDelay, restartDelay, loop]);
 
   return (
-    <div className="w-full max-w-sm mx-auto bg-cyan-900/30 backdrop-blur-md rounded-3xl overflow-hidden border border-cyan-600/30 shadow-xl">
-      <div className="p-4 bg-cyan-800/50 border-b border-cyan-600/30">
-        <div className="flex items-center justify-between">
-          <h3 
-            className="text-lg font-semibold text-green-400 cursor-pointer hover:text-green-300 transition-colors"
-            onClick={() => navigate('/login')}
-          >
-            Click here
-          </h3>
-          <button 
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-base font-medium rounded-lg transition-colors duration-300 flex items-center gap-2 shadow-lg hover:scale-105 transform"
-            onClick={() => navigate('/login')}
-          >
-            <i className="fas fa-comment-dots"></i>
-            Chat Now
-            <i className="fas fa-robot"></i>
-          </button>
+    <div className="w-full rounded-2xl overflow-hidden bg-slate-950/80 border border-white/10 shadow-2xl backdrop-blur-2xl">
+      {/* Window Title Bar */}
+      <div className="px-4 py-3 bg-slate-900/90 border-b border-white/[0.08] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Mac window dots */}
+          <div className="flex items-center space-x-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+          </div>
+          <div className="h-4 w-px bg-white/10 mx-1" />
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white">
+              <Bot size={13} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white tracking-tight">Viamod AI Talent Agent</p>
+              <div className="flex items-center gap-1.5 -mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] text-slate-400">Live Voice & NLP Active</span>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <button
+          onClick={() => navigate('/login')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition-all hover:scale-[1.02] cursor-pointer"
+        >
+          <span>Try Demo</span>
+          <ArrowRight size={12} />
+        </button>
       </div>
 
-      <div className="h-96 p-4 overflow-y-auto flex flex-col space-y-4">
+      {/* Messages Feed */}
+      <div className="h-80 sm:h-96 p-4 overflow-y-auto flex flex-col space-y-3.5 scrollbar-thin scrollbar-thumb-slate-800">
         {chatMessages.map((message, index) => (
           <div key={index} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[80%] p-3 rounded-2xl ${
-                message.isUser ? 'bg-green-600/80 text-white ml-4' : 'bg-cyan-800/50 text-cyan-50 mr-4'
-              } backdrop-blur-sm shadow-lg`}
+              className={`max-w-[85%] p-3.5 text-xs sm:text-sm leading-relaxed ${
+                message.isUser
+                  ? 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 rounded-2xl rounded-tr-xs'
+                  : 'bg-slate-900/90 text-slate-200 border border-white/[0.08] shadow-md rounded-2xl rounded-tl-xs'
+              }`}
             >
               {message.text}
             </div>
@@ -112,10 +130,11 @@ export default function Chatbot({
         {/* Bot typing indicator */}
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-cyan-800/50 p-4 rounded-2xl flex space-x-2 backdrop-blur-sm">
-              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            <div className="bg-slate-900/90 border border-white/[0.08] px-3.5 py-2.5 rounded-2xl rounded-tl-xs flex items-center space-x-1.5 shadow-sm">
+              <span className="text-[10px] text-cyan-400 font-mono mr-1">AI Thinking</span>
+              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" />
+              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce [animation-delay:0.4s]" />
             </div>
           </div>
         )}
@@ -123,18 +142,28 @@ export default function Chatbot({
         {/* User typing indicator */}
         {isUserTyping && (
           <div className="flex justify-end">
-            <div className="bg-green-600/50 p-2 rounded-2xl flex items-center gap-1 backdrop-blur-sm">
-              <div className="text-xs text-green-300">typing</div>
-              <div className="flex space-x-1">
-                <div className="w-1.5 h-1.5 bg-green-300 rounded-full animate-bounce"></div>
-                <div className="w-1.5 h-1.5 bg-green-300 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                <div className="w-1.5 h-1.5 bg-green-300 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-              </div>
+            <div className="bg-slate-800/80 border border-slate-700/60 px-3.5 py-2 rounded-2xl rounded-tr-xs flex items-center space-x-1.5">
+              <span className="text-[10px] text-slate-400">Recruiter typing</span>
+              <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" />
+              <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+              <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]" />
             </div>
           </div>
         )}
       </div>
+
+      {/* Simulated Interactive Input Footer */}
+      <div className="p-3 bg-slate-900/70 border-t border-white/[0.06]">
+        <div 
+          onClick={() => navigate('/login')}
+          className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-950/70 border border-white/10 hover:border-cyan-500/40 text-slate-400 hover:text-slate-200 text-xs cursor-pointer transition-all group"
+        >
+          <span className="truncate pr-2">Ask candidate evaluation question or parse resume...</span>
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-r from-cyan-500 to-indigo-600 group-hover:from-cyan-400 group-hover:to-indigo-500 flex items-center justify-center text-white shrink-0 shadow-sm transition-all">
+            <Send size={12} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-

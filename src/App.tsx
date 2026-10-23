@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ChakraProvider } from '@chakra-ui/react';
 import Index from "./pages/Index";
+
 import NotFound from "./pages/NotFound";
 import ResumeAnalyzer from "./components/ui/resumeAnalyzer";
 import Login from "./components/ui/login";

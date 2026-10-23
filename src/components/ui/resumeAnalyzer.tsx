@@ -15,6 +15,7 @@ import { loginUser } from '../../services/authService';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate, Link } from 'react-router-dom';
@@ -34,7 +35,7 @@ interface EmailResult {
   message: string;
 }
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:8001/api';
 
 const PREDEFINED_MESSAGES = {
   accept: `Dear Candidate,
@@ -119,7 +120,7 @@ const ResumeAnalyzer: React.FC = () => {
         formData.append('resume', file);
         formData.append('threshold', threshold.toString());
 
-        const response = await fetch('http://localhost:8001/api/analyze', {
+        const response = await fetch(`${API_BASE_URL}/analyze`, {
           method: 'POST',
           body: formData,
         });
@@ -425,6 +426,31 @@ const ResumeAnalyzer: React.FC = () => {
 
   const handleDownloadCSV = async (): Promise<void> => {
     try {
+      if (results && results.length > 0) {
+        let csvContent = "Rank,Name,Email,Similarity\n";
+        results.forEach((resume, index) => {
+          const name = (resume.names && resume.names[0]) || 'N/A';
+          const email = (resume.emails && resume.emails[0]) || 'N/A';
+          const similarity = typeof resume.similarity === 'number' ? resume.similarity.toFixed(2) : '0.00';
+          csvContent += `${index + 1},"${name}","${email}",${similarity}%\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ranked_resumes.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        toast({
+          title: "Success",
+          description: "CSV downloaded successfully!",
+        });
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/download-csv`);
       
       if (!response.ok) {

@@ -2,7 +2,7 @@
 Master Test & Validation Script
 
 Runs all tests and validations in sequence.
-Updated: 2025-10-28 - Added comprehensive validation suite
+Updated: 2025-10-28 - Added comprehensive validation suite.
 """
 
 import sys

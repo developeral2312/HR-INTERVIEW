@@ -18,6 +18,9 @@ const HRResumeAnalysis: React.FC = () => {
   const [showChatbot, setShowChatbot] = useState(true);
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null);
 
+
+
+  
   const handleResumeUpload = (file: File, text: string) => {
     console.log('Resume uploaded:', file.name);
     console.log('Extracted text length:', text.length);

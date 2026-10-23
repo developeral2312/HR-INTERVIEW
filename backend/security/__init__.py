@@ -1,6 +1,6 @@
 """
 Security & Isolation Module
-JWT authentication, session sandboxing, and memory isolation
+JWT authentication, session sandboxing, and memory isolation.
 """
 
 from .session_auth import SessionAuthManager, SessionToken, get_session_auth_manager

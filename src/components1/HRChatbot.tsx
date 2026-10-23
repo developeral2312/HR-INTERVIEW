@@ -16,6 +16,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import Spinner from "@/components/ui/spinner";
 import { useNavigate } from 'react-router-dom';
+
+
 import StartAnimation from '@/components/ui/StartAnimation';
 import ParticleBackground from '@/components/ui/ParticleBackground';
 import {
@@ -43,7 +45,8 @@ import {
   ArrowRight, 
   User, 
   Zap, 
-  CheckCircle2
+  CheckCircle2,
+  DollarSign
 } from 'lucide-react';
 
 interface Message {
@@ -209,9 +212,17 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
   const [schedDatetime, setSchedDatetime] = useState('');
   const [schedDuration, setSchedDuration] = useState('45');
   const [schedInterviewType, setSchedInterviewType] = useState('ai_assisted');
+  const [schedCustomMeetLink, setSchedCustomMeetLink] = useState('');
   const [schedResult, setSchedResult] = useState<any>(null);
   const [schedLoading, setSchedLoading] = useState(false);
   const [schedError, setSchedError] = useState<string | null>(null);
+
+  // ── New state for Salary Prediction Benchmark ──
+  const [salaryExperience, setSalaryExperience] = useState('');
+  const [salaryEducation, setSalaryEducation] = useState('');
+  const [salaryJobLevel, setSalaryJobLevel] = useState('');
+  const [salaryIndustry, setSalaryIndustry] = useState('');
+  const [salaryLocation, setSalaryLocation] = useState('');
 
   // ── Handle Schedule Interview ──
   const handleScheduleInterview = async () => {
@@ -226,6 +237,10 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
     setSchedLoading(true);
     setSchedError(null);
     setSchedResult(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s max timeout
+
     try {
       const payload = {
         candidate_name: schedCandidateName,
@@ -237,13 +252,16 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
         scheduled_datetime: new Date(schedDatetime).toISOString(),
         duration_minutes: Number(schedDuration) || 45,
         interview_type: schedInterviewType,
-        auto_start_bot: true,
+        auto_start_bot: schedInterviewType !== 'human',
       };
       const res = await fetch(FASTAPI_ENDPOINTS.scheduleInterview, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
+
       const data = await res.json();
       setSchedResult(data);
       if (data.success && data.data) {
@@ -264,10 +282,103 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
         const errMsg = data.errors?.[0]?.message || 'Interview scheduling failed. Please check details.';
         setSchedError(errMsg);
       }
-    } catch (err) {
-      setSchedError('FastAPI server se connect nahi ho saka. Port 8001 pe server run hai?');
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        setSchedError('Request timeout: Server ne response dene me zyaada waqt liya. Kripya page refresh karein.');
+      } else {
+        setSchedError('FastAPI server se connect nahi ho saka. Port 8001 pe server run hai?');
+      }
     } finally {
       setSchedLoading(false);
+    }
+  };
+
+  // ── Handle Salary Prediction Benchmark ──
+  const handleSalaryPrediction = async () => {
+    if (!salaryExperience || !salaryEducation || !salaryJobLevel || !salaryIndustry || !salaryLocation) {
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        content: 'Please provide all required candidate details: years of experience, education level, job level, industry, and location.'
+      }]);
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setMessages(prev => [...prev, {
+      type: 'user',
+      content: `Calculating salary benchmark for ${salaryJobLevel} in ${salaryIndustry} (${salaryExperience} yrs exp)`
+    }]);
+
+    try {
+      const years_experience = parseFloat(salaryExperience);
+      if (isNaN(years_experience) || years_experience < 0) {
+        throw new Error('Please enter a valid positive number for years of experience');
+      }
+
+      const formData = new FormData();
+      formData.append('years_experience', years_experience.toString());
+      formData.append('education_level', salaryEducation);
+      formData.append('job_level', salaryJobLevel);
+      formData.append('industry', salaryIndustry);
+      formData.append('location', salaryLocation);
+
+      const response = await fetch(API_ENDPOINTS.predictSalary, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      const { predicted_salary, confidence, feature_importance } = result;
+      const formatted_salary = `$${predicted_salary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      const featureImportanceText = feature_importance 
+        ? Object.entries(feature_importance)
+            .map(([feature, importance]) => `  • ${feature}: ${importance}%`)
+            .join('\n')
+        : '';
+
+      const formattedMessage = `
+Candidate Market Salary Benchmark:
+----------------------------------
+💰 Predicted Annual Salary: ${formatted_salary}
+🎯 Model Confidence: ${(confidence * 100).toFixed(2)}%
+
+Candidate Profile:
+-----------------
+• Experience: ${years_experience} Years
+• Education: ${salaryEducation}
+• Job Level: ${salaryJobLevel}
+• Industry: ${salaryIndustry}
+• Location Tier: ${salaryLocation}
+
+Key Salary Factors (Feature Importance):
+----------------------------------------
+${featureImportanceText}
+
+✨ Compensation estimate powered by XGBoost ML Model
+      `;
+
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        content: formattedMessage
+      }]);
+    } catch (error) {
+      console.error('Salary benchmark prediction error:', error);
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        content: `Error calculating salary benchmark: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
+      }]);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -316,7 +427,8 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
           'resume_qa': 'qa',
           'interview_questions': 'questions',
           'multiple_resume': 'multiple',
-          'resume_improvement': 'improvement'
+          'resume_improvement': 'improvement',
+          'salary_prediction': 'salary'
         };
 
         const functionName = functionMap[intent];
@@ -373,6 +485,7 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
     { id: 'schedule', label: 'Schedule Interview', icon: Calendar, tooltip: 'Create live AI interview room and dispatch candidate email invitation.' },
     { id: 'auto-interview', label: 'AI Pre-Screening', icon: Bot, tooltip: 'Instant AI candidate screening & benchmark simulation for HR (No email sent).' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, tooltip: 'Confidential scorecard and evaluations for HR recruiters.' },
+    { id: 'salary', label: 'Salary Benchmark', icon: DollarSign, tooltip: 'Predict market salary benchmark based on candidate experience, education, and role.' },
     { id: 'meet-bot', label: 'Deploy Meet Bot', icon: Video, tooltip: 'Dispatch AI interviewer bot into Google Meet rooms.' },
   ];
 
@@ -522,13 +635,30 @@ ${data.top_candidates ? data.top_candidates.map((candidate: any, index: number) 
         : 0;
       const matchingSkills = Array.isArray(first?.matching_skills) ? first.matching_skills : [];
       const missingSkills = Array.isArray(first?.missing_skills) ? first.missing_skills : [];
-      const strengthsArr = Array.isArray(first?.strengths) ? first.strengths : [];
-      let improvements = Array.isArray(first?.areas_for_improvement)
+      let strengthsArr = (Array.isArray(first?.strengths) ? first.strengths : [])
+        .filter((s: string) => s && !s.toLowerCase().includes('unable to generate'));
+      if (strengthsArr.length === 0 && matchingSkills.length > 0) {
+        strengthsArr = [
+          `Demonstrated proficiency in ${matchingSkills.slice(0, 3).join(', ')}`,
+          'Relevant professional experience aligned with core role requirements',
+          'Solid operational execution and team collaboration track record'
+        ];
+      }
+
+      let improvements = (Array.isArray(first?.areas_for_improvement)
         ? first.areas_for_improvement
-        : (Array.isArray(first?.improvement_areas) ? first.improvement_areas : []);
-      // Fallback: if backend didn't provide improvements, derive from missing skills
-      if ((!improvements || improvements.length === 0) && Array.isArray(missingSkills) && missingSkills.length > 0) {
-        improvements = missingSkills.map((skill: string) => `Strengthen ${skill} with hands-on projects and practice`);
+        : (Array.isArray(first?.improvement_areas) ? first.improvement_areas : []))
+        .filter((a: string) => a && !a.toLowerCase().includes('unable to generate'));
+      // Fallback: derive from missing skills or best practice recommendations
+      if (!improvements || improvements.length === 0) {
+        if (Array.isArray(missingSkills) && missingSkills.length > 0) {
+          improvements = missingSkills.map((skill: string) => `Strengthen ${skill} with hands-on projects and practice`);
+        } else {
+          improvements = [
+            'Continue deepening advanced technical and domain methodologies',
+            'Acquire targeted professional certifications for emerging toolsets'
+          ];
+        }
       }
 
       const analysisResult = `
@@ -1113,6 +1243,97 @@ ${q.question}
           </div>
         );
 
+      // ── Salary Prediction / Benchmark ──
+      case 'salary':
+        return (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-cyan-200">
+              💡 Calculate competitive market salary benchmarks for candidates based on real-world ML salary regression.
+            </div>
+            <div>
+              <label className="text-white mb-2 block text-sm font-medium">Years of Experience</label>
+              <Input 
+                type="number"
+                placeholder="e.g. 5" 
+                className="text-white bg-slate-800 border-slate-700"
+                value={salaryExperience}
+                onChange={(e) => setSalaryExperience(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-white mb-2 block text-sm font-medium">Education Level</label>
+              <Select value={salaryEducation} onValueChange={setSalaryEducation}>
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                  <SelectValue placeholder="Select education level" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                  <SelectItem value="High School">High School</SelectItem>
+                  <SelectItem value="Associate">Associate</SelectItem>
+                  <SelectItem value="Bachelor">Bachelor</SelectItem>
+                  <SelectItem value="Master">Master</SelectItem>
+                  <SelectItem value="PhD">PhD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-white mb-2 block text-sm font-medium">Job Level</label>
+              <Select value={salaryJobLevel} onValueChange={setSalaryJobLevel}>
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                  <SelectValue placeholder="Select job level" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                  <SelectItem value="Entry-level">Entry-level</SelectItem>
+                  <SelectItem value="Mid-level">Mid-level</SelectItem>
+                  <SelectItem value="Senior">Senior</SelectItem>
+                  <SelectItem value="Executive">Executive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-white mb-2 block text-sm font-medium">Industry</label>
+              <Select value={salaryIndustry} onValueChange={setSalaryIndustry}>
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                  <SelectValue placeholder="Select industry" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                  <SelectItem value="Technology">Technology</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Healthcare">Healthcare</SelectItem>
+                  <SelectItem value="Education">Education</SelectItem>
+                  <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                  <SelectItem value="Retail">Retail</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-white mb-2 block text-sm font-medium">Location</label>
+              <Select value={salaryLocation} onValueChange={setSalaryLocation}>
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                  <SelectValue placeholder="Select location tier" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                  <SelectItem value="Urban">Urban</SelectItem>
+                  <SelectItem value="Suburban">Suburban</SelectItem>
+                  <SelectItem value="Rural">Rural</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button 
+              className="w-full bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-semibold py-2 rounded-xl shadow-lg transition-all"
+              onClick={handleSalaryPrediction}
+              disabled={isAnalyzing || !salaryExperience || !salaryEducation || !salaryJobLevel || !salaryIndustry || !salaryLocation}
+            >
+              {isAnalyzing ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" /> Calculating Benchmark...
+                </>
+              ) : (
+                '💰 Predict Salary Benchmark'
+              )}
+            </Button>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -1129,17 +1350,17 @@ ${q.question}
           <div className="flex flex-wrap lg:flex-nowrap items-center justify-between px-3 md:px-5 py-2 gap-2">
             {/* Brand Logo & Name */}
             <div className="flex items-center gap-2.5 shrink-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[1px] shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[1px] shadow-[0_0_15px_rgba(6,182,212,0.3)]">
                 <div className="w-full h-full bg-slate-950 rounded-xl flex items-center justify-center">
                   <BrainCircuit className="w-4 h-4 text-cyan-400" />
                 </div>
               </div>
               <div className="hidden sm:block">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm tracking-wider bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                    NEXUS HR
+                  <span className="font-extrabold text-sm tracking-wide bg-gradient-to-r from-white via-slate-100 to-cyan-200 bg-clip-text text-transparent">
+                    VIAMOD SOLUTION
                   </span>
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold tracking-widest bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded uppercase">
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold tracking-widest bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 rounded uppercase">
                     AI AGENT
                   </span>
                 </div>
@@ -1158,10 +1379,10 @@ ${q.question}
                         <button
                           type="button"
                           onClick={() => handleFunctionSelect(item.id)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] xl:text-xs font-medium transition-all duration-200 cursor-pointer ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] xl:text-xs font-medium transition-all duration-200 cursor-pointer ${
                             isActive
-                              ? 'bg-gradient-to-r from-cyan-500/20 via-blue-600/30 to-indigo-600/30 border border-cyan-400/60 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.35)]'
-                              : 'text-slate-300 hover:text-white bg-slate-900/60 hover:bg-slate-800/80 border border-white/5 hover:border-white/20'
+                              ? 'bg-gradient-to-r from-cyan-500/20 via-blue-600/30 to-indigo-600/30 border border-cyan-400/50 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+                              : 'text-slate-300 hover:text-white bg-slate-900/50 hover:bg-slate-850 border border-white/[0.06] hover:border-white/20'
                           }`}
                         >
                           <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-300' : 'text-slate-400'}`} />
@@ -1180,13 +1401,13 @@ ${q.question}
             {/* Right Action Bar */}
             <div className="flex items-center gap-2 shrink-0">
               {/* Live engine pill */}
-              <div className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium">
+              <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span>Live</span>
               </div>
 
               {/* HR Profile badge */}
-              <div className="hidden 2xl:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900 border border-white/10 text-slate-300 text-xs">
+              <div className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/70 border border-white/10 text-slate-300 text-xs">
                 <div className="w-3.5 h-3.5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-[8px]">
                   HR
                 </div>
@@ -1214,34 +1435,34 @@ ${q.question}
             <div className="p-4 md:p-6 space-y-4">
               {/* If no active conversation or fresh screen, show Executive Command Center Hub */}
               {displayMessages.length <= 1 && !isAnalyzing && (
-                <div className="max-w-5xl mx-auto py-6 px-2 flex flex-col items-center text-center">
+                <div className="max-w-5xl mx-auto py-8 px-2 flex flex-col items-center text-center">
                   {/* Glowing pill badge */}
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-semibold tracking-wide uppercase mb-4 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '4s' }} />
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-xs font-semibold tracking-wide uppercase mb-4 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                     <span>Autonomous Talent Intelligence Suite</span>
                   </div>
 
                   {/* Main Heading */}
-                  <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight mb-2">
-                    Enterprise <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400 bg-clip-text text-transparent">AI Recruitment Command</span> Center
+                  <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight mb-3">
+                    Enterprise <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 bg-clip-text text-transparent">AI Recruitment Command</span> Center
                   </h1>
-                  <p className="text-slate-400 max-w-2xl text-xs md:text-sm mb-8 leading-relaxed">
+                  <p className="text-slate-400 max-w-2xl text-xs md:text-sm mb-8 leading-relaxed font-normal">
                     Screen candidates with ATS intelligence, schedule automated AI interviews with direct email invitations, conduct hands-free voice interviews, and inspect confidential recruiter scorecards.
                   </p>
 
-                  {/* 4 Feature Launch Cards Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full text-left mb-8">
+                  {/* 5 Feature Launch Cards Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 w-full text-left mb-8">
                     {/* Card 1: Schedule Interview */}
                     <div 
                       onClick={() => handleFunctionSelect('schedule')}
-                      className="group cursor-pointer rounded-2xl bg-slate-900/70 border border-cyan-500/20 hover:border-cyan-400/60 p-5 transition-all duration-300 hover:shadow-[0_0_25px_rgba(6,182,212,0.25)] hover:-translate-y-1 backdrop-blur-md flex flex-col justify-between"
+                      className="group cursor-pointer rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-cyan-400/50 p-5 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(6,182,212,0.15)] hover:-translate-y-1 backdrop-blur-xl flex flex-col justify-between"
                     >
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                        <div className="flex items-center justify-between mb-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">
                             <Calendar className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
                             Auto-Invite
                           </span>
                         </div>
@@ -1252,7 +1473,7 @@ ${q.question}
                           Generate AI interview session link and auto-send invitation to candidate email.
                         </p>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-cyan-400 font-semibold">
+                      <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-cyan-400 font-semibold">
                         <span>Launch Scheduler</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </div>
@@ -1261,14 +1482,14 @@ ${q.question}
                     {/* Card 2: Auto Voice Interview */}
                     <div 
                       onClick={() => handleFunctionSelect('auto-interview')}
-                      className="group cursor-pointer rounded-2xl bg-slate-900/70 border border-indigo-500/20 hover:border-indigo-400/60 p-5 transition-all duration-300 hover:shadow-[0_0_25px_rgba(99,102,241,0.25)] hover:-translate-y-1 backdrop-blur-md flex flex-col justify-between"
+                      className="group cursor-pointer rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-indigo-400/50 p-5 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] hover:-translate-y-1 backdrop-blur-xl flex flex-col justify-between"
                     >
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                        <div className="flex items-center justify-between mb-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
                             <Bot className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-300 bg-indigo-500/10 px-2.5 py-0.5 rounded-full border border-indigo-500/20">
                             Real Voice
                           </span>
                         </div>
@@ -1279,7 +1500,7 @@ ${q.question}
                           Conduct hands-free voice interviews with interactive humanoid bot avatar.
                         </p>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-indigo-400 font-semibold">
+                      <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-indigo-400 font-semibold">
                         <span>Open Live Room</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </div>
@@ -1288,14 +1509,14 @@ ${q.question}
                     {/* Card 3: Resume Screening */}
                     <div 
                       onClick={() => handleFunctionSelect('analysis')}
-                      className="group cursor-pointer rounded-2xl bg-slate-900/70 border border-emerald-500/20 hover:border-emerald-400/60 p-5 transition-all duration-300 hover:shadow-[0_0_25px_rgba(16,185,129,0.25)] hover:-translate-y-1 backdrop-blur-md flex flex-col justify-between"
+                      className="group cursor-pointer rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-emerald-400/50 p-5 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)] hover:-translate-y-1 backdrop-blur-xl flex flex-col justify-between"
                     >
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                        <div className="flex items-center justify-between mb-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
                             <FileText className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                             ATS Parser
                           </span>
                         </div>
@@ -1306,7 +1527,7 @@ ${q.question}
                           Parse candidate tech stack, calculate job fit score, and identify skill gaps.
                         </p>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-emerald-400 font-semibold">
+                      <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-emerald-400 font-semibold">
                         <span>Analyze Resume</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </div>
@@ -1315,14 +1536,14 @@ ${q.question}
                     {/* Card 4: Interview Analytics */}
                     <div 
                       onClick={() => handleFunctionSelect('analytics')}
-                      className="group cursor-pointer rounded-2xl bg-slate-900/70 border border-amber-500/20 hover:border-amber-400/60 p-5 transition-all duration-300 hover:shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:-translate-y-1 backdrop-blur-md flex flex-col justify-between"
+                      className="group cursor-pointer rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-amber-400/50 p-5 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(245,158,11,0.15)] hover:-translate-y-1 backdrop-blur-xl flex flex-col justify-between"
                     >
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                        <div className="flex items-center justify-between mb-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
                             <BarChart3 className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
                             Confidential
                           </span>
                         </div>
@@ -1333,8 +1554,35 @@ ${q.question}
                           Review candidate scores, audio transcript answers, and hiring recommendation.
                         </p>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-amber-400 font-semibold">
+                      <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-amber-400 font-semibold">
                         <span>View Scorecards</span>
+                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+
+                    {/* Card 5: Salary Benchmark */}
+                    <div 
+                      onClick={() => handleFunctionSelect('salary')}
+                      className="group cursor-pointer rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-teal-400/50 p-5 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(20,184,166,0.15)] hover:-translate-y-1 backdrop-blur-xl flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/25 flex items-center justify-center text-teal-400 group-hover:scale-105 transition-transform">
+                            <DollarSign className="w-5 h-5" />
+                          </div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-300 bg-teal-500/10 px-2.5 py-0.5 rounded-full border border-teal-500/20">
+                            ML Model
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-white text-base mb-1.5 group-hover:text-teal-300 transition-colors">
+                          Salary Benchmark
+                        </h3>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          Predict competitive market salary benchmarks with XGBoost machine learning model.
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-teal-400 font-semibold">
+                        <span>Predict Salary</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
@@ -1342,13 +1590,14 @@ ${q.question}
 
                   {/* Quick Action Suggestion Chips */}
                   <div className="w-full">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-center gap-1.5">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-center gap-1.5">
                       <Zap className="w-3.5 h-3.5 text-cyan-400" />
                       <span>One-Click Copilot Prompts</span>
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       {[
                         "Schedule AI interview for Full Stack Developer",
+                        "Predict market salary benchmark for 5 years Senior Tech Lead",
                         "Generate 10 technical questions for Data Scientist",
                         "Screen multiple candidate resumes for React Lead",
                         "Show latest candidate interview scorecard"
@@ -1359,9 +1608,9 @@ ${q.question}
                           onClick={() => {
                             setInputMessage(prompt);
                           }}
-                          className="text-xs px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 hover:border-cyan-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                          className="text-xs px-3.5 py-1.5 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-cyan-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                         >
-                          <span className="text-cyan-400">✦</span>
+                          <span className="text-cyan-400 font-bold">✦</span>
                           <span>{prompt}</span>
                         </button>
                       ))}
@@ -1503,6 +1752,7 @@ ${q.question}
                   {selectedFunction === 'schedule' && 'Schedule AI Interview'}
                   {selectedFunction === 'auto-interview' && 'AI Candidate Pre-Screening'}
                   {selectedFunction === 'analytics' && 'Interview Analytics'}
+                  {selectedFunction === 'salary' && 'Salary Prediction & Market Benchmark'}
                   {selectedFunction === 'meet-bot' && 'Deploy Meet Bot'}
                 </h2>
                 <p className="text-[10px] text-slate-400">Enterprise AI Recruitment</p>

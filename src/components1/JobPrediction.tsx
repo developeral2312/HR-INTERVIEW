@@ -9,6 +9,11 @@ interface JobPredictionProps {
   analysis: any;
 }
 
+
+
+
+
+
 const JobPrediction: React.FC<JobPredictionProps> = ({ resumeFile, resumeText, analysis }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

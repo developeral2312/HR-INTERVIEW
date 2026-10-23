@@ -3,7 +3,7 @@ Database Migration Script
 
 Migrates existing data to new collections:
 - meet_transcripts → transcriptions
-- Creates meetings collection from interviews
+- Creates meetings collection from interview
 """
 
 import os

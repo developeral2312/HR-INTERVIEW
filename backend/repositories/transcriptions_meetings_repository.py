@@ -3,7 +3,7 @@ Transcriptions and Meetings Repository
 
 Handles MongoDB operations for:
 - Transcriptions: STT audio transcriptions with analysis
-- Meetings: Virtual meeting sessions with participants and analytics
+- Meetings: Virtual meeting sessions with participants and analytics.
 """
 
 import logging

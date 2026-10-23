@@ -13,6 +13,8 @@ import {
   Mic, Clock, BarChart3, ChevronDown, ChevronUp, Loader2, ExternalLink
 } from 'lucide-react';
 
+
+
 interface QuestionScore {
   question_index: number;
   score: number;

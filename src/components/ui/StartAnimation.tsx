@@ -8,6 +8,7 @@ interface StartAnimationProps {
   className?: string;
 }
 
+
 const StartAnimation: React.FC<StartAnimationProps> = ({ 
   onAnimationComplete, 
   onAnimationStart,

@@ -1,6 +1,6 @@
 """
 Real-time Dashboard Service
-Monitors orchestration metrics and provides WebSocket updates
+Monitors orchestration metrics and provides WebSocket updates.
 """
 
 import logging

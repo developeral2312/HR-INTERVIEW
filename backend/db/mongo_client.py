@@ -6,7 +6,7 @@ Features:
 - Singleton pattern (one connection for entire app)
 - Automatic reconnection on failure
 - Connection pooling
-- Detailed logging
+- Detailed loggings
 """
 
 import logging

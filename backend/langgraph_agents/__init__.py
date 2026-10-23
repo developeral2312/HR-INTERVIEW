@@ -2,7 +2,7 @@
 LangGraph Package for AI Recruiter
 
 This package contains LangGraph-based workflows for:
-- Resume Analysis (multi-step evaluation)
+- Resume Analysis (multi-step evaluations)
 - Q&A (context-aware answering)
 
 Why LangGraph?

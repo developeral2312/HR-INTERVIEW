@@ -11,7 +11,7 @@ Why we need this:
 How it works:
 1. Tracks conversation history
 2. Compresses old messages when context gets too large
-3. Maintains semantic coherence while reducing tokens
+3. Maintains semantic coherence while reducing tokens.
 """
 
 import logging

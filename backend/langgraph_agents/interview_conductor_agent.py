@@ -1,7 +1,7 @@
 """
 Interview Conductor LangGraph Agent
 Conducts AI-powered interviews with candidates using LLM
-Maintains conversation context and flow
+Maintains conversation context and flows
 """
 
 import json

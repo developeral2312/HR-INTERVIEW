@@ -1,5 +1,5 @@
 /**
- * Google Meet Recorder using Puppeteer
+ * Google Meet Recorder using Puppeteer.
  * Automates joining Google Meet and captures audio streams
  */
 

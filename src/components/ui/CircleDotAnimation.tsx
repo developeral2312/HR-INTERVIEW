@@ -10,6 +10,7 @@ const CircleDotAnimation: React.FC<CircleDotAnimationProps> = ({ onAnimationComp
   const animationFrameRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  
   useEffect(() => {
     // Create and setup audio
     try {

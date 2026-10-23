@@ -1,7 +1,7 @@
 """
 Distributed Real-time Orchestration Agent
 Handles multiple concurrent interviews using Redis Streams
-Enables horizontal scaling across multiple FastAPI workers
+Enables horizontal scaling across multiple FastAPI worker
 """
 
 import json

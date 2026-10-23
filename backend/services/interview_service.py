@@ -1,7 +1,7 @@
 """
 Interview Service - Interview management business logic
 
-Placeholder for future interview-related business logic
+Placeholder for future interview-related business logic.
 """
 
 from repositories.interview_repository import InterviewRepository

@@ -13,6 +13,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { Mail, Lock, User, LogOut, CheckCircle2, Building2, Briefcase, UserCircle } from 'lucide-react';
 import { registerUser, loginUser } from '../../services/authService';
 
+
+
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -92,14 +95,27 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // Create user in Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
+      const cleanEmail = email.trim();
+      const cleanPassword = password.trim();
+
+      // Create user in Firebase or sign in if already created during failed backend sync
+      let firebaseUser;
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+        firebaseUser = userCredential.user;
+      } catch (fbErr: any) {
+        if (fbErr?.code === 'auth/email-already-in-use') {
+          const signInCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+          firebaseUser = signInCredential.user;
+        } else {
+          throw fbErr;
+        }
+      }
       
       // Register in MongoDB backend with role
       const response = await registerUser(
         firebaseUser.uid,
-        firebaseUser.email || email,
+        firebaseUser.email || cleanEmail,
         name,
         role as 'hr' | 'employee',
         role === 'hr' ? company : null,

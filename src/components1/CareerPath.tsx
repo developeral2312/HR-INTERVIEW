@@ -14,6 +14,8 @@ const CareerPath: React.FC<CareerPathProps> = ({ resumeFile, resumeText, analysi
   const [error, setError] = useState<string | null>(null);
   const [careerPaths, setCareerPaths] = useState<any>(null);
 
+
+  
   const handleAnalyze = async () => {
     if (!resumeText) {
       setError('Please upload a resume first');
