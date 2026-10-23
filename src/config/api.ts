@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   testExtraction: `${API_BASE_URL}/api/extract-text`,
   testSimilarity: `${API_BASE_URL}/api/test-similarity`,
   predictSalary: `${API_BASE_URL}/api/predict-salary`,
+  predictSalaryFromResume: `${API_BASE_URL}/api/predict-salary-from-resume`,
   predictJobPossibility: `${API_BASE_URL}/api/predict-job-possibility`,
 };
 
@@ -27,6 +28,7 @@ export const API_ENDPOINTS = {
 export const FASTAPI_ENDPOINTS = {
   // Resume Analysis
   analyzeResume: `${FASTAPI_BASE_URL}/api/analyze`,
+  predictSalaryFromResume: `${FASTAPI_BASE_URL}/api/predict-salary-from-resume`,
 
   // Interview Scheduling
   scheduleInterview: `${FASTAPI_BASE_URL}/api/interviews/schedule`,

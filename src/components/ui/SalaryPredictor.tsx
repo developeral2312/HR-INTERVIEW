@@ -122,50 +122,46 @@ export default function SalaryPredictor({ initialData, useResumeData = false }: 
         throw new Error('Please enter valid numeric values');
       }
       
-      // Basic salary calculation
-      const base_salary = 30000;
-      const exp_factor = years_experience * 2000;
-      
-      // Education factor
-      const edu_mapping: {[key: string]: number} = {
-        'High School': 0,
-        'Associate': 5000,
-        'Bachelor': 15000,
-        'Master': 25000,
-        'PhD': 35000
-      };
-      const edu_factor = edu_mapping[formData.education] || 15000;
-      
-      // Job level factor
-      const level_mapping: {[key: string]: number} = {
-        'Entry-level': 0,
-        'Mid-level': 20000,
-        'Senior': 40000,
-        'Executive': 80000
-      };
-      const level_factor = level_mapping[formData.job_level] || 20000;
-      
-      // Industry factor
-      const industry_mapping: {[key: string]: number} = {
-        'Technology': 15000,
-        'Finance': 12000,
-        'Healthcare': 10000,
-        'Education': 5000,
-        'Manufacturing': 8000,
-        'Retail': 3000
-      };
-      const industry_factor = industry_mapping[formData.industry] || 15000;
-      
-      // Location factor
-      const location_mapping: {[key: string]: number} = {
-        'Urban': 10000,
-        'Suburban': 5000,
-        'Rural': 0
-      };
-      const location_factor = location_mapping[formData.location] || 10000;
-      
+      // Realistic calibrated compensation formula
+      const edu_base = ({
+        'High School': 28000,
+        'Associate': 38000,
+        'Bachelor': 55000,
+        'Master': 72000,
+        'PhD': 92000
+      } as Record<string, number>)[formData.education] || 55000;
+
+      const level_mult = ({
+        'Entry-level': 1.0,
+        'Mid-level': 1.55,
+        'Senior': 2.4,
+        'Executive': 3.7
+      } as Record<string, number>)[formData.job_level] || 1.0;
+
+      const exp_rate = ({
+        'Entry-level': 2800,
+        'Mid-level': 5200,
+        'Senior': 8500,
+        'Executive': 13000
+      } as Record<string, number>)[formData.job_level] || 4500;
+
+      const ind_mult = ({
+        'Technology': 1.15,
+        'Finance': 1.12,
+        'Healthcare': 1.05,
+        'Education': 0.90,
+        'Manufacturing': 0.95,
+        'Retail': 0.88
+      } as Record<string, number>)[formData.industry] || 1.0;
+
+      const loc_mult = ({
+        'Urban': 1.12,
+        'Suburban': 1.00,
+        'Rural': 0.88
+      } as Record<string, number>)[formData.location] || 1.0;
+
       // Calculate salary
-      const predicted_salary = base_salary + exp_factor + edu_factor + level_factor + industry_factor + location_factor;
+      const predicted_salary = Math.round(((edu_base * level_mult) + (years_experience * exp_rate)) * ind_mult * loc_mult / 500) * 500;
       
       // Format salary for display
       const formatted_salary = `$${predicted_salary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

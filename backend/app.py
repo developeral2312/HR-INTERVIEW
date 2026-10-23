@@ -1042,13 +1042,14 @@ def predict_salary():
         job_level = data.get('job_level')
         industry = data.get('industry')
         location = data.get('location')
+        currency = data.get('currency', 'INR')
         
         if not all([years_experience_str, education_level, job_level, industry, location]):
             return jsonify({'error': 'Missing required fields'}), 400
         
         years_experience = float(years_experience_str)
         
-        print(f"💰 Received salary prediction request")
+        print(f"💰 Received salary prediction request ({currency})")
         print(f"📊 Params: {years_experience}y exp, {education_level}, {job_level}, {industry}, {location}")
         
         # Validate inputs
@@ -1074,10 +1075,11 @@ def predict_salary():
             education_level=education_level,
             job_level=job_level,
             industry=industry,
-            location=location
+            location=location,
+            currency=currency
         )
         
-        print(f"✅ Salary prediction complete: ${result['predicted_salary']:,.2f}")
+        print(f"✅ Salary prediction complete: {result.get('formatted_salary_inr', result.get('predicted_salary'))}")
         
         return jsonify(result)
         

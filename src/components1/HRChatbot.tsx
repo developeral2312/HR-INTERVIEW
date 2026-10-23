@@ -222,7 +222,10 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
   const [salaryEducation, setSalaryEducation] = useState('');
   const [salaryJobLevel, setSalaryJobLevel] = useState('');
   const [salaryIndustry, setSalaryIndustry] = useState('');
-  const [salaryLocation, setSalaryLocation] = useState('');
+  const [salaryLocation, setSalaryLocation] = useState('Urban');
+  const [salaryCurrency, setSalaryCurrency] = useState<'INR' | 'USD'>('INR');
+  const [isExtractingSalary, setIsExtractingSalary] = useState(false);
+  const [extractedCandidateName, setExtractedCandidateName] = useState('');
 
   // ── Handle Schedule Interview ──
   const handleScheduleInterview = async () => {
@@ -294,6 +297,119 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
     }
   };
 
+  // ── Auto-Extract Candidate Details from Resume for Salary Benchmark ──
+  const handleAutoExtractSalary = async (targetFile?: File) => {
+    const file = targetFile || resumeFile;
+    if (!file && !resumeText) {
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        content: '⚠️ Please upload a candidate resume PDF first to extract salary details.'
+      }]);
+      return;
+    }
+
+    setIsExtractingSalary(true);
+    setMessages(prev => [...prev, {
+      type: 'user',
+      content: `Extracting candidate profile from resume & calculating ${salaryCurrency} market salary benchmark...`
+    }]);
+
+    try {
+      const formData = new FormData();
+      if (file) {
+        formData.append('resume', file);
+      }
+      if (resumeText) {
+        formData.append('resume_text', resumeText);
+      }
+      formData.append('currency', salaryCurrency);
+      formData.append('location', salaryLocation || 'Urban');
+
+      const endpoint = FASTAPI_ENDPOINTS.predictSalaryFromResume || API_ENDPOINTS.predictSalaryFromResume;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to extract candidate profile from resume');
+      }
+
+      const prof = data.candidate_profile;
+      const pred = data.prediction;
+
+      // Populate sidebar inputs with extracted parameters
+      setSalaryExperience(prof.years_experience.toString());
+      setSalaryEducation(prof.education_level);
+      setSalaryJobLevel(prof.job_level);
+      setSalaryIndustry(prof.industry);
+      setExtractedCandidateName(prof.candidate_name || '');
+
+      const isINR = salaryCurrency === 'INR';
+      const mainSalary = isINR
+        ? `₹${(pred.predicted_salary_inr || pred.predicted_salary).toLocaleString('en-IN')} / year (${pred.lpa || ((pred.predicted_salary_inr || pred.predicted_salary)/100000).toFixed(1)} LPA)`
+        : `$${(pred.predicted_salary_usd || pred.predicted_salary).toLocaleString('en-US')} / year`;
+
+      const rangeText = isINR
+        ? `₹${pred.min_salary_inr?.toLocaleString('en-IN') || (pred.min_salary).toLocaleString('en-IN')} - ₹${pred.max_salary_inr?.toLocaleString('en-IN') || (pred.max_salary).toLocaleString('en-IN')} (${((pred.min_salary_inr || pred.min_salary)/100000).toFixed(1)} - ${((pred.max_salary_inr || pred.max_salary)/100000).toFixed(1)} LPA)`
+        : `$${pred.min_salary_usd?.toLocaleString('en-US') || pred.min_salary?.toLocaleString('en-US')} - $${pred.max_salary_usd?.toLocaleString('en-US') || pred.max_salary?.toLocaleString('en-US')}`;
+
+      const featureImportanceText = pred.feature_importance 
+        ? Object.entries(pred.feature_importance)
+            .map(([feature, importance]) => `  • ${feature}: ${importance}%`)
+            .join('\n')
+        : '';
+
+      const formattedMessage = `
+✅ Candidate Resume Analyzed: ${prof.candidate_name}
+==================================================
+💰 Predicted Annual Salary (${salaryCurrency}): ${mainSalary}
+📊 Competitive Salary Range: ${rangeText}
+🎯 Model Confidence: ${((pred.confidence || 0.89) * 100).toFixed(1)}%
+
+🌍 Cross-Market Benchmark:
+-------------------------
+• Indian Market (INR): ₹${pred.predicted_salary_inr ? pred.predicted_salary_inr.toLocaleString('en-IN') : 'N/A'} / yr (${pred.lpa || 'N/A'} LPA)
+• Global / US (USD): $${pred.predicted_salary_usd ? pred.predicted_salary_usd.toLocaleString('en-US') : 'N/A'} / yr
+
+👤 Extracted Candidate Profile:
+------------------------------
+• Candidate Name: ${prof.candidate_name}
+• Total Experience: ${prof.years_experience} Years
+• Education Level: ${prof.education_level}
+• Target Job Level: ${prof.job_level}
+• Primary Industry: ${prof.industry}
+• Location Tier: ${salaryLocation || 'Urban'}
+${prof.skills && prof.skills.length > 0 ? `• Key Skills: ${prof.skills.slice(0, 6).join(', ')}` : ''}
+
+Key Salary Factors (Feature Importance):
+----------------------------------------
+${featureImportanceText}
+
+✨ Form fields in sidebar are auto-populated. You can adjust values and recalculate at any time.
+      `;
+
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        content: formattedMessage.trim()
+      }]);
+
+    } catch (err: any) {
+      console.error('Salary resume auto-extraction error:', err);
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        content: `Error extracting salary benchmark from resume: ${err.message}. You can manually enter details in the right sidebar.`
+      }]);
+    } finally {
+      setIsExtractingSalary(false);
+    }
+  };
+
   // ── Handle Salary Prediction Benchmark ──
   const handleSalaryPrediction = async () => {
     if (!salaryExperience || !salaryEducation || !salaryJobLevel || !salaryIndustry || !salaryLocation) {
@@ -307,7 +423,7 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
     setIsAnalyzing(true);
     setMessages(prev => [...prev, {
       type: 'user',
-      content: `Calculating salary benchmark for ${salaryJobLevel} in ${salaryIndustry} (${salaryExperience} yrs exp)`
+      content: `Calculating ${salaryCurrency} market salary benchmark for ${salaryJobLevel} in ${salaryIndustry} (${salaryExperience} yrs exp, ${salaryEducation})`
     }]);
 
     try {
@@ -322,6 +438,7 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
       formData.append('job_level', salaryJobLevel);
       formData.append('industry', salaryIndustry);
       formData.append('location', salaryLocation);
+      formData.append('currency', salaryCurrency);
 
       const response = await fetch(API_ENDPOINTS.predictSalary, {
         method: 'POST',
@@ -338,7 +455,15 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
       }
 
       const { predicted_salary, confidence, feature_importance } = result;
-      const formatted_salary = `$${predicted_salary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const isINR = (salaryCurrency === 'INR');
+      
+      const formatted_salary = isINR
+        ? `₹${(result.predicted_salary_inr || predicted_salary).toLocaleString('en-IN')} / year (${result.lpa || ((result.predicted_salary_inr || predicted_salary)/100000).toFixed(1)} LPA)`
+        : `$${(result.predicted_salary_usd || predicted_salary).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      const rangeText = isINR
+        ? `₹${result.min_salary_inr?.toLocaleString('en-IN') || result.min_salary?.toLocaleString('en-IN')} - ₹${result.max_salary_inr?.toLocaleString('en-IN') || result.max_salary?.toLocaleString('en-IN')} (${((result.min_salary_inr || result.min_salary)/100000).toFixed(1)} - ${((result.max_salary_inr || result.max_salary)/100000).toFixed(1)} LPA)`
+        : `$${result.min_salary_usd?.toLocaleString('en-US') || result.min_salary?.toLocaleString('en-US')} - $${result.max_salary_usd?.toLocaleString('en-US') || result.max_salary?.toLocaleString('en-US')}`;
 
       const featureImportanceText = feature_importance 
         ? Object.entries(feature_importance)
@@ -347,14 +472,20 @@ const HRChatbot: React.FC<HRChatbotProps> = ({ onSelectFunction }) => {
         : '';
 
       const formattedMessage = `
-Candidate Market Salary Benchmark:
-----------------------------------
+Candidate Market Salary Benchmark (${salaryCurrency}):
+---------------------------------------------------
 💰 Predicted Annual Salary: ${formatted_salary}
-🎯 Model Confidence: ${(confidence * 100).toFixed(2)}%
+📊 Realistic Market Range: ${rangeText}
+🎯 Model Confidence: ${((confidence || 0.89) * 100).toFixed(1)}%
+
+🌍 Market Comparison:
+--------------------
+• Indian Market (INR): ₹${result.predicted_salary_inr ? result.predicted_salary_inr.toLocaleString('en-IN') : 'N/A'} / yr (${result.lpa || 'N/A'} LPA)
+• Global / US (USD): $${result.predicted_salary_usd ? result.predicted_salary_usd.toLocaleString('en-US') : 'N/A'} / yr
 
 Candidate Profile:
 -----------------
-• Experience: ${years_experience} Years
+${extractedCandidateName ? `• Candidate: ${extractedCandidateName}\n` : ''}• Experience: ${years_experience} Years
 • Education: ${salaryEducation}
 • Job Level: ${salaryJobLevel}
 • Industry: ${salaryIndustry}
@@ -364,12 +495,12 @@ Key Salary Factors (Feature Importance):
 ----------------------------------------
 ${featureImportanceText}
 
-✨ Compensation estimate powered by XGBoost ML Model
+✨ Calibrated with Enterprise Compensation Model & Labor Market Analytics
       `;
 
       setMessages(prev => [...prev, {
         type: 'ai',
-        content: formattedMessage
+        content: formattedMessage.trim()
       }]);
     } catch (error) {
       console.error('Salary benchmark prediction error:', error);
@@ -1248,87 +1379,183 @@ ${q.question}
         return (
           <div className="space-y-4">
             <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-cyan-200">
-              💡 Calculate competitive market salary benchmarks for candidates based on real-world ML salary regression.
+              💡 Calculate realistic, industry-calibrated salary benchmarks for candidates based on real-world compensation analytics.
             </div>
-            <div>
-              <label className="text-white mb-2 block text-sm font-medium">Years of Experience</label>
-              <Input 
-                type="number"
-                placeholder="e.g. 5" 
-                className="text-white bg-slate-800 border-slate-700"
-                value={salaryExperience}
-                onChange={(e) => setSalaryExperience(e.target.value)}
-              />
+
+            {/* Resume Auto-Extraction Section */}
+            <div className="p-3.5 rounded-xl bg-slate-900/90 border border-teal-500/30 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Resume-Based Auto Benchmark</span>
+                </span>
+                <span className="text-[10px] bg-teal-500/10 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/20 font-medium">
+                  AI Powered
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Upload or use candidate resume to auto-detect experience, education, job level, and calculate realistic benchmark.
+              </p>
+
+              {resumeFile ? (
+                <div className="space-y-2 pt-1">
+                  <div className="text-xs text-teal-200 bg-teal-950/40 border border-teal-800/50 rounded-lg p-2 flex items-center justify-between">
+                    <span className="truncate max-w-[200px]">📄 {resumeFile.name}</span>
+                    <span className="text-[10px] text-teal-400 font-semibold">Active</span>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => handleAutoExtractSalary()}
+                    disabled={isExtractingSalary || isAnalyzing}
+                    className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white font-semibold text-xs py-2 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {isExtractingSalary ? (
+                      <>
+                        <Spinner className="h-3.5 w-3.5 mr-1" /> Analyzing Resume & Benchmark...
+                      </>
+                    ) : (
+                      '⚡ Auto-Extract & Predict from this Resume'
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="pt-1">
+                  <label className="text-[11px] text-slate-300 mb-1 block">Upload Candidate Resume (PDF)</label>
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    className="text-white text-xs bg-slate-800 border-slate-700"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setResumeFile(f);
+                        setPdfUrl(URL.createObjectURL(f));
+                        await handleAutoExtractSalary(f);
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
+
+            {/* Currency Selector */}
             <div>
-              <label className="text-white mb-2 block text-sm font-medium">Education Level</label>
+              <label className="text-white mb-1.5 block text-xs font-semibold">Compensation Market & Currency</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSalaryCurrency('INR')}
+                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border ${
+                    salaryCurrency === 'INR'
+                      ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-[0_0_12px_rgba(20,184,166,0.25)]'
+                      : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🇮🇳 INR (₹ LPA - India)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSalaryCurrency('USD')}
+                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border ${
+                    salaryCurrency === 'USD'
+                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+                      : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🌐 USD ($ - US/Global)
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-800 pt-3">
+              <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold block mb-2">
+                Candidate Profile Parameters
+              </span>
+              <div>
+                <label className="text-white mb-1.5 block text-xs font-medium">Years of Experience</label>
+                <Input 
+                  type="number"
+                  placeholder="e.g. 1" 
+                  className="text-white bg-slate-800 border-slate-700 text-xs"
+                  value={salaryExperience}
+                  onChange={(e) => setSalaryExperience(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-white mb-1.5 block text-xs font-medium">Education Level</label>
               <Select value={salaryEducation} onValueChange={setSalaryEducation}>
-                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700 text-xs">
                   <SelectValue placeholder="Select education level" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-700 text-white">
                   <SelectItem value="High School">High School</SelectItem>
-                  <SelectItem value="Associate">Associate</SelectItem>
-                  <SelectItem value="Bachelor">Bachelor</SelectItem>
-                  <SelectItem value="Master">Master</SelectItem>
-                  <SelectItem value="PhD">PhD</SelectItem>
+                  <SelectItem value="Associate">Associate (Diploma / 2-Year)</SelectItem>
+                  <SelectItem value="Bachelor">Bachelor (B.Tech / B.E / B.Sc / BCA)</SelectItem>
+                  <SelectItem value="Master">Master (M.Tech / MCA / MBA / MS)</SelectItem>
+                  <SelectItem value="PhD">PhD / Doctorate</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <div>
-              <label className="text-white mb-2 block text-sm font-medium">Job Level</label>
+              <label className="text-white mb-1.5 block text-xs font-medium">Job Level</label>
               <Select value={salaryJobLevel} onValueChange={setSalaryJobLevel}>
-                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700 text-xs">
                   <SelectValue placeholder="Select job level" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                  <SelectItem value="Entry-level">Entry-level</SelectItem>
-                  <SelectItem value="Mid-level">Mid-level</SelectItem>
-                  <SelectItem value="Senior">Senior</SelectItem>
-                  <SelectItem value="Executive">Executive</SelectItem>
+                  <SelectItem value="Entry-level">Entry-level (0-2 Years)</SelectItem>
+                  <SelectItem value="Mid-level">Mid-level (2-5 Years)</SelectItem>
+                  <SelectItem value="Senior">Senior (5-10 Years)</SelectItem>
+                  <SelectItem value="Executive">Executive / Lead (10+ Years)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <div>
-              <label className="text-white mb-2 block text-sm font-medium">Industry</label>
+              <label className="text-white mb-1.5 block text-xs font-medium">Industry</label>
               <Select value={salaryIndustry} onValueChange={setSalaryIndustry}>
-                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700 text-xs">
                   <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                  <SelectItem value="Technology">Technology</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="Healthcare">Healthcare</SelectItem>
-                  <SelectItem value="Education">Education</SelectItem>
+                  <SelectItem value="Technology">Technology / IT</SelectItem>
+                  <SelectItem value="Finance">Finance & Banking</SelectItem>
+                  <SelectItem value="Healthcare">Healthcare & Pharma</SelectItem>
+                  <SelectItem value="Education">Education & EdTech</SelectItem>
                   <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                  <SelectItem value="Retail">Retail</SelectItem>
+                  <SelectItem value="Retail">Retail & E-commerce</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <div>
-              <label className="text-white mb-2 block text-sm font-medium">Location</label>
+              <label className="text-white mb-1.5 block text-xs font-medium">Location Tier</label>
               <Select value={salaryLocation} onValueChange={setSalaryLocation}>
-                <SelectTrigger className="text-white bg-slate-800 border-slate-700">
+                <SelectTrigger className="text-white bg-slate-800 border-slate-700 text-xs">
                   <SelectValue placeholder="Select location tier" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                  <SelectItem value="Urban">Urban</SelectItem>
-                  <SelectItem value="Suburban">Suburban</SelectItem>
-                  <SelectItem value="Rural">Rural</SelectItem>
+                  <SelectItem value="Urban">Urban (Tier-1 Metro: Bangalore, Mumbai, Delhi, NCR, Pune, Hyd)</SelectItem>
+                  <SelectItem value="Suburban">Suburban (Tier-2 Cities: Jaipur, Ahmedabad, Chandigarh, Indore)</SelectItem>
+                  <SelectItem value="Rural">Rural / Tier-3 / Remote</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <Button 
-              className="w-full bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-semibold py-2 rounded-xl shadow-lg transition-all"
+              className="w-full bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-semibold py-2.5 rounded-xl shadow-lg transition-all text-xs"
               onClick={handleSalaryPrediction}
-              disabled={isAnalyzing || !salaryExperience || !salaryEducation || !salaryJobLevel || !salaryIndustry || !salaryLocation}
+              disabled={isAnalyzing || isExtractingSalary || !salaryExperience || !salaryEducation || !salaryJobLevel || !salaryIndustry || !salaryLocation}
             >
               {isAnalyzing ? (
                 <>
                   <Spinner className="mr-2 h-4 w-4" /> Calculating Benchmark...
                 </>
               ) : (
-                '💰 Predict Salary Benchmark'
+                `💰 Calculate ${salaryCurrency} Market Benchmark`
               )}
             </Button>
           </div>

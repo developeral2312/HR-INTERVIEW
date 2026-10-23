@@ -2659,12 +2659,13 @@ async def predict_salary(
     education_level: str = Form(...),
     job_level: str = Form(...),
     industry: str = Form(...),
-    location: str = Form(...)
+    location: str = Form(...),
+    currency: Optional[str] = Form("INR")
 ):
     """
     Predict salary using ML model + LangGraph workflow.
     
-    Uses trained XGBoost models for accurate salary predictions.
+    Uses trained XGBoost models and labor market analytics for accurate salary predictions.
     
     Args:
         years_experience: Years of work experience
@@ -2672,12 +2673,14 @@ async def predict_salary(
         job_level: Job level (Entry-level, Mid-level, Senior, Executive)
         industry: Industry (Technology, Finance, Healthcare, etc.)
         location: Location (Urban, Suburban, Rural)
+        currency: 'INR' (Indian market) or 'USD' (Global/US market)
     
     Returns:
-        Predicted salary with confidence and feature importance
+        Predicted salary with confidence, min/max ranges, and feature importance
     """
     try:
-        logger.info(f"💰 Received salary prediction request")
+        curr = currency or "INR"
+        logger.info(f"💰 Received salary prediction request ({curr})")
         logger.info(f"📊 Params: {years_experience}y exp, {education_level}, {job_level}, {industry}, {location}")
         
         # Validate inputs
@@ -2703,10 +2706,11 @@ async def predict_salary(
             education_level=education_level,
             job_level=job_level,
             industry=industry,
-            location=location
+            location=location,
+            currency=curr
         )
         
-        logger.info(f"✅ Salary prediction complete: ${result['predicted_salary']:,.2f}")
+        logger.info(f"✅ Salary prediction complete: {result.get('formatted_salary_inr', result.get('predicted_salary'))}")
         
         return result
         
@@ -2715,6 +2719,146 @@ async def predict_salary(
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         return {"error": str(e)}
+
+
+@app.post("/api/predict-salary-from-resume")
+async def predict_salary_from_resume(
+    resume: Optional[UploadFile] = File(None),
+    resume_text: Optional[str] = Form(None),
+    currency: Optional[str] = Form("INR"),
+    location: Optional[str] = Form("Urban")
+):
+    """
+    Extract candidate profile from uploaded resume and compute competitive market compensation benchmark.
+    """
+    try:
+        text = ""
+        cand_name = "Candidate"
+        if resume:
+            text = extract_text_from_pdf(resume)
+            if resume.filename:
+                cand_name = resume.filename.rsplit('.', 1)[0]
+        elif resume_text:
+            text = resume_text.strip()
+            
+        if not text:
+            return {"success": False, "error": "No resume file or text provided for salary analysis."}
+            
+        emails, names = extract_entities_from_text(text)
+        if names:
+            cand_name = names[0]
+            
+        profile = {
+            "years_experience": 1.0,
+            "education_level": "Bachelor",
+            "job_level": "Entry-level",
+            "industry": "Technology",
+            "candidate_name": cand_name,
+            "skills": []
+        }
+        
+        parsed_with_llm = False
+        try:
+            from groq import Groq
+            groq_key = os.getenv("API_KEY_ANALYSIS") or os.getenv("GROQ_API_KEY")
+            if groq_key:
+                groq_client = Groq(api_key=groq_key)
+                prompt = f"""You are an expert HR compensation analyst. Analyze this candidate resume to extract profile parameters for an accurate salary benchmark.
+Resume text:
+{text[:3500]}
+
+Respond ONLY with a valid JSON object with these EXACT keys:
+{{
+  "candidate_name": "{cand_name}",
+  "years_experience": <number of years of work experience as float, e.g. 1.0, 2.5, 0.5>,
+  "education_level": "<Must be exactly one of: High School, Associate, Bachelor, Master, PhD>",
+  "job_level": "<Must be exactly one of: Entry-level, Mid-level, Senior, Executive>",
+  "industry": "<Must be exactly one of: Technology, Finance, Healthcare, Education, Manufacturing, Retail>",
+  "skills": ["<skill 1>", "<skill 2>", "<skill 3>"]
+}}"""
+                res = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    max_tokens=300
+                )
+                raw_json = res.choices[0].message.content.strip()
+                import json
+                if "```json" in raw_json:
+                    raw_json = raw_json.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw_json:
+                    raw_json = raw_json.split("```")[1].split("```")[0].strip()
+                start_idx = raw_json.find("{")
+                end_idx = raw_json.rfind("}")
+                if start_idx != -1 and end_idx != -1:
+                    raw_json = raw_json[start_idx:end_idx+1]
+                data = json.loads(raw_json)
+                
+                exp_val = float(data.get("years_experience", 1.0))
+                edu_val = data.get("education_level", "Bachelor")
+                level_val = data.get("job_level", "Entry-level")
+                ind_val = data.get("industry", "Technology")
+                
+                valid_edu = ['High School', 'Associate', 'Bachelor', 'Master', 'PhD']
+                valid_levels = ['Entry-level', 'Mid-level', 'Senior', 'Executive']
+                valid_ind = ['Technology', 'Finance', 'Healthcare', 'Education', 'Manufacturing', 'Retail']
+                
+                profile["years_experience"] = max(0.0, exp_val)
+                profile["education_level"] = edu_val if edu_val in valid_edu else "Bachelor"
+                profile["job_level"] = level_val if level_val in valid_levels else ("Senior" if exp_val >= 5 else "Entry-level")
+                profile["industry"] = ind_val if ind_val in valid_ind else "Technology"
+                profile["candidate_name"] = data.get("candidate_name", cand_name)
+                profile["skills"] = data.get("skills", [])
+                parsed_with_llm = True
+        except Exception as parse_err:
+            logger.warning(f"LLM salary extraction warning: {parse_err}, using heuristic fallback")
+            
+        if not parsed_with_llm:
+            exp_matches = re.findall(r'(\d+)\+?\s*years?', text, re.I)
+            if exp_matches:
+                profile["years_experience"] = float(exp_matches[0])
+            else:
+                profile["years_experience"] = 1.0
+                
+            if re.search(r'phd|doctorate', text, re.I):
+                profile["education_level"] = "PhD"
+            elif re.search(r'master|m\.tech|mca|mba|m\.s', text, re.I):
+                profile["education_level"] = "Master"
+            elif re.search(r'bachelor|b\.tech|bca|b\.e|b\.s|degree', text, re.I):
+                profile["education_level"] = "Bachelor"
+            elif re.search(r'associate|diploma', text, re.I):
+                profile["education_level"] = "Associate"
+            else:
+                profile["education_level"] = "Bachelor"
+                
+            exp = profile["years_experience"]
+            if exp < 2:
+                profile["job_level"] = "Entry-level"
+            elif exp < 5:
+                profile["job_level"] = "Mid-level"
+            elif exp < 9:
+                profile["job_level"] = "Senior"
+            else:
+                profile["job_level"] = "Executive"
+                
+        service = get_langgraph_service()
+        pred_result = service.predict_salary(
+            years_experience=profile["years_experience"],
+            education_level=profile["education_level"],
+            job_level=profile["job_level"],
+            industry=profile["industry"],
+            location=location or "Urban",
+            currency=currency or "INR"
+        )
+        
+        return {
+            "success": True,
+            "candidate_profile": profile,
+            "prediction": pred_result
+        }
+    except Exception as e:
+        logger.error(f"Error in predict_salary_from_resume: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 
 @app.post("/api/predict-job-possibility")

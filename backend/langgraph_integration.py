@@ -377,21 +377,11 @@ class LangGraphService:
         education_level: str,
         job_level: str,
         industry: str,
-        location: str
+        location: str,
+        currency: str = "INR"
     ) -> Dict[str, Any]:
         """
         Predict salary using ML model + LangGraph workflow
-        
-        Why use ML model:
-        1. Trained on real data (not hardcoded rules)
-        2. Better accuracy (XGBoost model)
-        3. Feature importance (understand predictions)
-        4. Confidence scores (know reliability)
-        
-        Why LangGraph:
-        1. Structured workflow (preprocess -> predict -> validate)
-        2. Error handling at each step
-        3. Logging and monitoring
         
         Args:
             years_experience: Years of work experience
@@ -399,11 +389,12 @@ class LangGraphService:
             job_level: Job level (Entry-level, Mid-level, Senior, Executive)
             industry: Industry (Technology, Finance, Healthcare, etc.)
             location: Location (Urban, Suburban, Rural)
+            currency: Currency code ('INR' or 'USD')
         
         Returns:
-            Salary prediction with confidence and feature importance
+            Salary prediction with confidence, ranges and feature importance
         """
-        logger.info("💰 [LangGraph] Starting salary prediction workflow...")
+        logger.info(f"💰 [LangGraph] Starting salary prediction workflow ({currency})...")
         logger.info(f"📊 Input: {years_experience}y exp, {education_level}, {job_level}, {industry}, {location}")
         
         try:
@@ -412,11 +403,15 @@ class LangGraphService:
                 education_level=education_level,
                 job_level=job_level,
                 industry=industry,
-                location=location
+                location=location,
+                currency=currency
             )
             
             logger.info("✅ [LangGraph] Salary prediction complete")
-            logger.info(f"💵 Predicted Salary: ${result['predicted_salary']:,.2f}")
+            if result.get("currency") == "USD":
+                logger.info(f"💵 Predicted Salary: ${result['predicted_salary']:,.2f}")
+            else:
+                logger.info(f"💵 Predicted Salary: ₹{result['predicted_salary']:,.0f} ({result.get('lpa', 0)} LPA)")
             logger.info(f"📊 Confidence: {result['confidence']:.2%}")
             
             return result
